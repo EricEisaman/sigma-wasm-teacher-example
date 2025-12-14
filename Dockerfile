@@ -1,6 +1,7 @@
 # Multi-stage Dockerfile for Rust WASM + Vite build
 # Stage 1: Rust WASM Builder
-FROM rust:1-alpine AS rust-builder
+# Using rust:alpine (smallest image, ~500MB) instead of rust:1-alpine
+FROM rust:alpine AS rust-builder
 
 # Install build dependencies
 RUN apk add --no-cache \
@@ -11,7 +12,9 @@ RUN apk add --no-cache \
     bash
 
 # Install wasm-bindgen-cli
-RUN cargo install wasm-bindgen-cli --version 0.2.87
+# Version must match wasm-bindgen crate version in Cargo.toml
+# Using 0.2.106 which is compatible with Rust 1.71+ and matches "0.2" in Cargo.toml
+RUN cargo install wasm-bindgen-cli --version 0.2.106
 
 # Install wasm-opt from binaryen
 RUN apk add --no-cache binaryen
