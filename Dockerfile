@@ -46,7 +46,8 @@ RUN rustup target add wasm32-unknown-unknown
 RUN ./scripts/build.sh
 
 # Stage 2: Node.js Frontend Builder
-FROM node:20-alpine AS node-builder
+# Using node:22-alpine to meet Vite 7 requirements (>=22.12.0) and align with local dev environment
+FROM node:22-alpine AS node-builder
 
 WORKDIR /app
 
