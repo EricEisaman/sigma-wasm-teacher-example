@@ -2,7 +2,7 @@
 
 A collection of interactive WebAssembly demos showcasing Rust-compiled WASM modules integrated with modern web technologies. This project demonstrates various use cases including pathfinding algorithms, computer vision, natural language processing, and generative art.
 
-Check out the live demos <a href="https://wasm-demos.onrender.com" target="_none">here</a>.
+Check out the live demos <a href="https://wasm-demos.onrender.com" target="_blank">here</a>.
 
 ## Demo Endpoints
 
