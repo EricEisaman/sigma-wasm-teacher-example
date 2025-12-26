@@ -27,9 +27,9 @@ Before diving into the code, let's understand how the entire system fits togethe
 ```mermaid
 graph TB
     subgraph Development["Development Environment"]
-        RustWorkspace["Rust Workspace<br/>(wasm-astar/, wasm-preprocess/)"]
+        RustWorkspace["Rust Workspace<br/>(6 WASM crates)"]
         TypeScriptCode["TypeScript Source<br/>(src/main.ts, routes/, wasm/)"]
-        Pages["HTML Pages<br/>(pages/astar.html, pages/preprocess.html)"]
+        Pages["HTML Pages<br/>(6 demo pages)"]
     end
     
     subgraph Build["Build Process"]
@@ -48,12 +48,12 @@ graph TB
     subgraph Runtime["Production Runtime"]
         Nginx["Nginx Server<br/>Port Binding"]
         StaticFiles["Static Files<br/>/usr/share/nginx/html"]
-        WasmModules["WASM Modules<br/>(wasm_astar_bg.wasm,<br/>wasm_preprocess_bg.wasm)"]
+        WasmModules["WASM Modules<br/>(6 compiled modules)"]
     end
     
     subgraph Client["Browser Client"]
         Router["Client Router<br/>main.ts"]
-        RouteHandlers["Route Handlers<br/>(astar.ts, preprocess.ts)"]
+        RouteHandlers["Route Handlers<br/>(6 route handlers)"]
         WasmLoader["WASM Loader<br/>loader.ts"]
         Canvas["HTML5 Canvas<br/>Rendering"]
     end
@@ -134,12 +134,19 @@ The application uses a simple client-side router in `src/main.ts`:
 
 ```typescript:src/main.ts
 import { init as initAstar } from './routes/astar';
-import { init as initPreprocess } from './routes/preprocess';
+import { init as initPreprocessSmolvlm500m } from './routes/preprocess-smolvlm-500m';
+import { init as initPreprocessSmolvlm256m } from './routes/preprocess-smolvlm-256m';
+import { init as initImageCaptioning } from './routes/image-captioning';
+import { init as initFunctionCalling } from './routes/function-calling';
+import { init as initFractalChat } from './routes/fractal-chat';
 
 const routes: Map<string, RouteHandler> = new Map();
 routes.set('/astar', initAstar);
-routes.set('/preprocess', initPreprocess);
-routes.set('/', initAstar); // Default route
+routes.set('/preprocess-smolvlm-500m', initPreprocessSmolvlm500m);
+routes.set('/preprocess-smolvlm-256m', initPreprocessSmolvlm256m);
+routes.set('/image-captioning', initImageCaptioning);
+routes.set('/function-calling', initFunctionCalling);
+routes.set('/fractal-chat', initFractalChat);
 ```
 
 When a user navigates to a URL, the router:
@@ -163,6 +170,7 @@ When a user navigates to a URL, the router:
 - **`/preprocess-smolvlm-256m`**: SmolVLM-256M vision-language model (smaller, faster variant)
 - **`/image-captioning`**: ViT-GPT2 image captioning using Transformers.js
 - **`/function-calling`**: Function calling agent with DistilGPT-2 and WASM tools
+- **`/fractal-chat`**: Interactive chat that generates fractal images based on keywords, using Qwen1.5-0.5B-Chat and WASM fractal generation
 
 💡 **Tip**: This architecture is inspired by the pattern of using WASM for efficient, low-level computations (like preprocessing for client-side LLMs) while keeping the main application logic in TypeScript.
 
@@ -207,6 +215,10 @@ wasm-agent-tools/
 ├── Cargo.toml          # Agent tools crate configuration
 └── src/
     └── lib.rs          # Function calling tools (calculate, process_text, get_stats)
+wasm-fractal-chat/
+├── Cargo.toml          # Fractal generation crate configuration
+└── src/
+    └── lib.rs          # Fractal generation algorithms (Mandelbrot, Julia, etc.)
 ```
 
 🧠 **Concept Break**: Why a Workspace?
@@ -348,7 +360,8 @@ members = [
   "wasm-preprocess",
   "wasm-preprocess-256m",
   "wasm-preprocess-image-captioning",
-  "wasm-agent-tools"
+  "wasm-agent-tools",
+  "wasm-fractal-chat"
 ]
 resolver = "2"
 
@@ -404,7 +417,8 @@ src/
 │   ├── preprocess-smolvlm-500m.ts  # SmolVLM-500M route handler
 │   ├── preprocess-smolvlm-256m.ts  # SmolVLM-256M route handler
 │   ├── image-captioning.ts         # ViT-GPT2 image captioning route handler
-│   └── function-calling.ts         # Function calling agent route handler
+│   ├── function-calling.ts         # Function calling agent route handler
+│   └── fractal-chat.ts             # Fractal chat route handler
 ├── models/
 │   ├── smolvlm.ts                  # SmolVLM-500M model logic
 │   ├── smolvlm-256m.ts             # SmolVLM-256M model logic
@@ -678,6 +692,17 @@ export interface WasmModuleAgentTools extends WasmModuleBase {
   process_text(text: string, operation: string): string;
   get_stats(data: Uint8Array): string;
 }
+
+export interface WasmModuleFractalChat extends WasmModuleBase {
+  generate_mandelbrot(width: number, height: number): Uint8Array;
+  generate_julia(width: number, height: number): Uint8Array;
+  generate_buddhabrot(width: number, height: number): Uint8Array;
+  generate_orbit_trap(width: number, height: number): Uint8Array;
+  generate_gray_scott(width: number, height: number): Uint8Array;
+  generate_lsystem(width: number, height: number): Uint8Array;
+  generate_fractal_flame(width: number, height: number): Uint8Array;
+  generate_strange_attractor(width: number, height: number): Uint8Array;
+}
 ```
 
 Each WASM module interface extends `WasmModuleBase`, ensuring all modules have the required `memory` property while allowing module-specific functions.
@@ -766,6 +791,7 @@ fi
 ./scripts/build-wasm.sh wasm-preprocess-256m pkg/wasm_preprocess_256m
 ./scripts/build-wasm.sh wasm-preprocess-image-captioning pkg/wasm_preprocess_image_captioning
 ./scripts/build-wasm.sh wasm-agent-tools pkg/wasm_agent_tools
+./scripts/build-wasm.sh wasm-fractal-chat pkg/wasm_fractal_chat
 
 echo "ALL WASM MODULES BUILT SUCCESSFULLY"
 ```
@@ -833,6 +859,11 @@ pkg/
     ├── wasm_agent_tools.js
     ├── wasm_agent_tools.d.ts
     └── wasm_agent_tools_bg.wasm.d.ts
+└── wasm_fractal_chat/
+    ├── wasm_fractal_chat_bg.wasm
+    ├── wasm_fractal_chat.js
+    ├── wasm_fractal_chat.d.ts
+    └── wasm_fractal_chat_bg.wasm.d.ts
 ```
 
 Each module is self-contained with its own JavaScript bindings and type definitions.
@@ -851,6 +882,10 @@ import initWasm from '../../pkg/wasm_preprocess/wasm_preprocess.js';
 
 ```typescript:src/routes/function-calling.ts
 import initWasm from '../../pkg/wasm_agent_tools/wasm_agent_tools.js';
+```
+
+```typescript:src/routes/fractal-chat.ts
+import initWasm from '../../pkg/wasm_fractal_chat/wasm_fractal_chat.js';
 ```
 
 Vite's WASM plugin:
@@ -918,6 +953,7 @@ Transformers.js is a JavaScript library that runs Hugging Face models directly i
 
 1. **`/image-captioning`**: Uses `Xenova/vit-gpt2-image-captioning` for image captioning
 2. **`/function-calling`**: Uses `Xenova/distilgpt2` for text generation in the Function Calling Agent
+3. **`/fractal-chat`**: Uses `Xenova/qwen1.5-0.5b-chat` for conversational AI responses when no fractal keyword is detected
 
 ### How It Works
 
@@ -1020,14 +1056,16 @@ COPY wasm-preprocess/Cargo.toml ./wasm-preprocess/
 COPY wasm-preprocess-256m/Cargo.toml ./wasm-preprocess-256m/
 COPY wasm-preprocess-image-captioning/Cargo.toml ./wasm-preprocess-image-captioning/
 COPY wasm-agent-tools/Cargo.toml ./wasm-agent-tools/
+COPY wasm-fractal-chat/Cargo.toml ./wasm-fractal-chat/
 
 # Create dummy src files to cache dependencies
-RUN mkdir -p wasm-astar/src wasm-preprocess/src wasm-preprocess-256m/src wasm-preprocess-image-captioning/src wasm-agent-tools/src && \
+RUN mkdir -p wasm-astar/src wasm-preprocess/src wasm-preprocess-256m/src wasm-preprocess-image-captioning/src wasm-agent-tools/src wasm-fractal-chat/src && \
     echo "fn main() {}" > wasm-astar/src/lib.rs || true && \
     echo "fn main() {}" > wasm-preprocess/src/lib.rs || true && \
     echo "fn main() {}" > wasm-preprocess-256m/src/lib.rs || true && \
     echo "fn main() {}" > wasm-preprocess-image-captioning/src/lib.rs || true && \
-    echo "fn main() {}" > wasm-agent-tools/src/lib.rs || true
+    echo "fn main() {}" > wasm-agent-tools/src/lib.rs || true && \
+    echo "fn main() {}" > wasm-fractal-chat/src/lib.rs || true
 
 # Build dependencies (cached if Cargo.toml unchanged)
 RUN cargo build --target wasm32-unknown-unknown --release --workspace || true
@@ -1038,6 +1076,7 @@ COPY wasm-preprocess ./wasm-preprocess
 COPY wasm-preprocess-256m ./wasm-preprocess-256m
 COPY wasm-preprocess-image-captioning ./wasm-preprocess-image-captioning
 COPY wasm-agent-tools ./wasm-agent-tools
+COPY wasm-fractal-chat ./wasm-fractal-chat
 COPY scripts ./scripts
 
 # Make build scripts executable
@@ -1237,6 +1276,7 @@ services:
         - wasm-preprocess-256m/**
         - wasm-preprocess-image-captioning/**
         - wasm-agent-tools/**
+        - wasm-fractal-chat/**
         - Cargo.toml
         - package.json
         - vite.config.ts
@@ -1460,7 +1500,11 @@ Update the root `Cargo.toml`:
 members = [
   "wasm-astar",
   "wasm-preprocess",
-  "wasm-agent-tools"  # Add your crate here
+  "wasm-preprocess-256m",
+  "wasm-preprocess-image-captioning",
+  "wasm-agent-tools",
+  "wasm-fractal-chat",
+  "your-new-crate"  # Add your crate here
 ]
 ```
 
@@ -1609,7 +1653,7 @@ The build system automatically:
 - Includes it in the Docker build
 - Makes it available to your route handler
 
-💡 **Tip**: Follow the pattern established by existing endpoints. The shared utilities (`loader.ts`, `types.ts`) ensure consistency and type safety across all endpoints. For Transformers.js endpoints, you can reference the `/image-captioning` or `/function-calling` implementations.
+💡 **Tip**: Follow the pattern established by existing endpoints. The shared utilities (`loader.ts`, `types.ts`) ensure consistency and type safety across all endpoints. For Transformers.js endpoints, you can reference the `/image-captioning` or `/function-calling` implementations. For hybrid endpoints that combine WASM and Transformers.js (like `/fractal-chat`), reference the fractal-chat route handler which uses WASM for fractal generation and Transformers.js for chat responses.
 
 ---
 

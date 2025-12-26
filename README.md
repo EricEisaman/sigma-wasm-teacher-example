@@ -1,107 +1,266 @@
-# Rust WebAssembly A* Pathfinding Demo
+# Sigma WASM - WebAssembly Demos
 
-This is a port of an A* implementation by [Jacob Reichert](https://github.com/jacobdeichert/wasm-astar).
+A collection of interactive WebAssembly demos showcasing Rust-compiled WASM modules integrated with modern web technologies. This project demonstrates various use cases including pathfinding algorithms, computer vision, natural language processing, and generative art.
 
-Check out the demo [here](https://sigma-wasm.onrender.com/)!
+Check out the live demos [here](https://sigma-wasm.onrender.com/)!
 
-![demo gif](dist/demo.gif)
+## Demo Endpoints
 
-#### Where to Store Game State
+### A* Pathfinding (`/astar`)
 
-Global scoped variables are not ideal of course, but for a small demo it shouldn't be a problem. One goal of mine was to keep as much logic as possible on the Rust side instead of in js land. I also didn't want to send the game state back and forth between js and Rust every tick since that seems like absolute overkill. With that said, it seemed like I must store the game state in a global Rust variable. After reading through the `rocket_wasm` source code, I copied their [global state pattern](https://github.com/aochagavia/rocket_wasm/blob/d0ca51beb9c7c351a1f0266206edfd553bf078d3/src/lib.rs#L23-L25).
+An interactive pathfinding algorithm visualization built with Rust and WebAssembly. This demo provides real-time visualization of the A* pathfinding algorithm with interactive controls.
 
-~~~rust
-lazy_static! {
-    static ref WORLD_STATE: Mutex<WorldState> = Mutex::new(WorldState::new());
-    static ref ENGINE_STATE: Mutex<EngineState> = Mutex::new(EngineState::new());
-}
-~~~
+**Technology Stack:**
+- Rust/WASM for pathfinding logic
+- Canvas-based rendering
+- Real-time game loop with `requestAnimationFrame`
 
-> [view src](https://github.com/jacobdeichert/wasm-astar/blob/cee849fa6ae54ba187e1a16556ce35ea1698b052/src/lib.rs#L44-L47)
+**Features:**
+- Real-time pathfinding visualization on procedurally generated maps
+- Interactive controls: arrow keys or mouse to move the starting point
+- Spacebar to randomize the map
+- FPS counter and path count display
+- Multi-layer canvas rendering system
 
-However, this pattern ended up causing a few issues for me that I had to overcome...
+**WASM Module:** `wasm-astar`
 
-#### Mutex Unlocking
+**Key Files:**
+- Route: [`src/routes/astar.ts`](src/routes/astar.ts)
+- Rust Source: [`wasm-astar/src/lib.rs`](wasm-astar/src/lib.rs)
+- HTML: [`pages/astar.html`](pages/astar.html)
 
-With the game state stored as a mutex, I need to lock it each time I want to use it.
+This demo is a port of an A* implementation by [Jacob Reichert](https://github.com/jacobdeichert/wasm-astar), demonstrating how to manage game state in Rust using global mutexes and handle the complexities of WASM-JS interop.
 
-As you'll see in the snippet below, I ran into an issue where I accessed `WORLD_STATE` and then called another function which also accessed `WORLD_STATE` too. I ran into this issue the hard way... After the wasm loaded in the client, I'd get this amazingly descriptive error:
+---
 
-> "RuntimeError: unreachable executed"
+### SmolVLM-500M (`/preprocess-smolvlm-500m`)
 
-After disabling some code here and there, I found out where this error was coming from... the mutex locks.
+Visual Question Answering (VQA) and Image Captioning using the SmolVLM-500M-Instruct model. This demo showcases client-side vision-language AI with high-performance image preprocessing.
 
-I then learned that mutexes unlock themselves when their scope lifetime ends. With that knowledge, I tried wrapping a part of the logic with curly braces `{ ... }` and put the `initial_draw()` call outside that scope. This worked! The `world` variable dies at the end of its scope and this allows `initial_draw()` to access the `WORLD_STATE` mutex.
+**Technology Stack:**
+- Rust/WASM for image preprocessing (Lanczos3 resizing)
+- ONNX Runtime Web for model inference
+- Hugging Face model hosting
 
-Throughout my code, you'll see a bunch of spots where I add extra curly braces. One alternative solution is to pass `world` to each function. I started doing that in some places, but haven't cleaned up the rest yet.
+**Features:**
+- Image preprocessing with WASM (resizing to 224×224 for model input)
+- Visual Question Answering: answer questions about image content
+- Image Captioning: generate descriptive text from images
+- Real-time filter preview with sliders (contrast, cinematic effects)
+- Webcam support for live image capture
+- Model caching for faster subsequent loads
 
-~~~rust
-#[no_mangle]
-pub extern "C" fn init(debug: i32, render_interval_ms: i32) {
-    // Requires block curlies so lifetime of world ends which causes unlock
-    // and allows initial_draw() to gain control of the lock.
-    // Otherwise, this generic client error occurs: "RuntimeError: unreachable executed"
-    {
-        let world = &mut WORLD_STATE.lock().unwrap();
-        world.debug = if debug == 1 { true } else { false };
-        // ...
-    }
-    initial_draw();
-}
-~~~
+**WASM Module:** `wasm-preprocess`
 
-> [view src](https://github.com/jacobdeichert/wasm-astar/blob/cee849fa6ae54ba187e1a16556ce35ea1698b052/src/lib.rs#L56-L77)
+**Model:** SmolVLM-500M-Instruct from Hugging Face
 
-#### Mutex Unlocking Part 2
+**Key Files:**
+- Route: [`src/routes/preprocess-smolvlm-500m.ts`](src/routes/preprocess-smolvlm-500m.ts)
+- Model Integration: [`src/models/smolvlm.ts`](src/models/smolvlm.ts)
+- HTML: [`pages/preprocess-smolvlm-500m.html`](pages/preprocess-smolvlm-500m.html)
 
-So this one was a little trickier to find at first. When the js side called my Rust `init()` function, if it's in debug mode I wanted to do a slow `setInterval` tick instead of the normal `requestAnimationFrame`. The Rust side kicks off `start_interval_tick()` on the js side. Since the tick is really slow, I didn't have an initial render shown for x amount of seconds. So to get that initial render, I decided to do an immediate tick by calling the Rust `tick()` function.
+The WASM preprocessing module handles efficient image decoding and resizing, preparing images for the vision encoder. The model runs entirely client-side using ONNX Runtime Web with WASM acceleration.
 
-Then, this wonderful error again:
+---
 
-> "RuntimeError: unreachable executed"
+### SmolVLM-256M (`/preprocess-smolvlm-256m`)
 
-After some fiddly debugging, I realized what was going on. Rust called into js (`start_interval_tick()`) and js called back into Rust (`tick()`) all within the same call stack started from the Rust `init()` function. Since both `init()` and `tick()` code paths access `WORLD_STATE`, `init()` still owned the lock and `tick()` crashed because of that. After I understood that it was due to sharing the same call stack, that meant that `init()` was never finishing and therefor its `WORLD_STATE` reference never unlocked. I simply fixed it by doing an immediate `setTimeout` (0ms) to push that initial `tick()` call onto the end of the js event queue thus having its own call stack.
+A faster, smaller variant of the SmolVLM demo using the 256M parameter model. Optimized for speed while maintaining similar capabilities to the 500M version.
 
+**Technology Stack:**
+- Rust/WASM for image preprocessing
+- ONNX Runtime Web for model inference
+- SmolVLM-256M model (512×512 input size)
 
-Here's the fixed version.
+**Features:**
+- Same VQA and captioning capabilities as 500M version
+- Faster inference due to smaller model size
+- Optimized preprocessing pipeline
+- Real-time filters and webcam support
+- Lower memory footprint
 
-~~~js
-js_start_interval_tick(ms) {
-    isIntervalTick = true;
-    // If I immediately call wasmModule.tick, the rust WORLD_STATE mutex
-    // doesn't get unlocked and throws an error. So instead, we do an
-    // immediate setTimeout so it occurs on the next stack frame.
-    setTimeout(() => {
-        return WASM_ASTAR.wasmModule.tick(performance.now());
-    }, 0);
-    setInterval(() => {
-        return WASM_ASTAR.wasmModule.tick(performance.now());
-    }, ms);
-},
-~~~
+**WASM Module:** `wasm-preprocess-256m`
 
-> [view src](https://github.com/jacobdeichert/wasm-astar/blob/cee849fa6ae54ba187e1a16556ce35ea1698b052/dist/main.js#L59-L71)
+**Model:** SmolVLM-256M (uses 512×512 input resolution)
 
-> After writing this post, I now have realized I could instead remove this immediate tick and do it on the Rust side.
+**Key Files:**
+- Route: [`src/routes/preprocess-smolvlm-256m.ts`](src/routes/preprocess-smolvlm-256m.ts)
+- Model Integration: [`src/models/smolvlm-256m.ts`](src/models/smolvlm-256m.ts)
+- HTML: [`pages/preprocess-smolvlm-256m.html`](pages/preprocess-smolvlm-256m.html)
 
-#### Sending Text to JS Land
+This demo is ideal for devices with limited memory or when faster response times are preferred. The preprocessing pipeline is specifically optimized for the 512×512 input size.
 
-JS and wasm can only send ints and floats back and forth right now, no strings yet. However, sending strings was easier than I thought it would be. I stumbled across this post [Getting started with Rust/WebAssembly](https://maffydub.wordpress.com/2017/12/02/getting-started-with-rust-webassembly/) which describes how to decode the text from the wasm module's memory buffer when given a pointer and a length.
+---
 
-I haven't ran any performance tests on this solution yet, so keep in mind that sending text to js draw calls every frame could slow down rendering a bit, though it might not be much. If anyone has done performance tests on this, let me know!
+### ViT-GPT2 Image Captioning (`/image-captioning`)
 
-Also, I don't yet know how to send strings from js to Rust but so far I have not had to. An obvious reason would be user input.
+Image captioning using a Vision Transformer (ViT) encoder with GPT-2 decoder, powered by Transformers.js. This demo showcases a different approach to vision-language models compared to SmolVLM.
 
-~~~js
-const wasmReadStrFromMemory = (ptr, length) => {
-  const buf = new Uint8Array(WASM_ASTAR.wasmModule.memory.buffer, ptr, length);
-  return new TextDecoder('utf8').decode(buf);
-};
-~~~
+**Technology Stack:**
+- Rust/WASM for image preprocessing and filters
+- Transformers.js for model inference
+- ViT-GPT2 model architecture
 
-> [view src](https://github.com/jacobdeichert/wasm-astar/blob/5089f7ec663938c7bdeb178c357e111621ce3551/dist/main.js#L156-L162)
+**Features:**
+- Image captioning: generate natural language descriptions
+- WASM preprocessing with multiple filter options (contrast, cinematic, sepia)
+- Real-time filter preview with sliders
+- Webcam support for live capture
+- Client-side inference with no server calls
 
+**WASM Module:** `wasm-preprocess-image-captioning`
 
+**Model:** ViT-GPT2 via Transformers.js
+
+**Key Files:**
+- Route: [`src/routes/image-captioning.ts`](src/routes/image-captioning.ts)
+- Model Integration: [`src/models/image-captioning.ts`](src/models/image-captioning.ts)
+- HTML: [`pages/image-captioning.html`](pages/image-captioning.html)
+
+The ViT-GPT2 model combines a Vision Transformer for image understanding with GPT-2 for text generation, providing a different architectural approach compared to the SmolVLM models. All processing happens client-side using WebAssembly acceleration.
+
+---
+
+### Function Calling Agent (`/function-calling`)
+
+A client-side autonomous agent with local LLM inference and function calling capabilities. This demo showcases how to build goal-oriented agents that can use tools to accomplish tasks.
+
+**Technology Stack:**
+- Transformers.js for LLM inference
+- Rust/WASM for tool execution
+- DistilGPT-2 model for text generation
+
+**Features:**
+- Goal-oriented agent execution: describe a goal and the agent plans steps
+- Function calling: agent can call WASM tools (calculate, process_text, get_stats)
+- Human-in-the-loop clarification: agent asks for clarification when needed
+- Step-by-step execution display showing reasoning process
+- Tool execution results feed back into agent reasoning
+
+**WASM Module:** `wasm-agent-tools`
+
+**Model:** DistilGPT-2 via Transformers.js
+
+**Available Tools:**
+- `calculate(expression)`: Evaluate mathematical expressions
+- `process_text(text, operation)`: Text processing (uppercase, lowercase, reverse, length, word_count)
+- `get_stats(data)`: Statistical analysis of data arrays
+
+**Key Files:**
+- Route: [`src/routes/function-calling.ts`](src/routes/function-calling.ts)
+- Model Integration: [`src/models/function-calling.ts`](src/models/function-calling.ts)
+- HTML: [`pages/function-calling.html`](pages/function-calling.html)
+
+The agent analyzes the user's goal, decides which tools to use, executes them via WASM, and uses the results to generate a final response. All processing happens client-side, demonstrating fully autonomous agents running in the browser.
+
+---
+
+### Fractal Chat (`/fractal-chat`)
+
+An interactive chat interface that generates fractal images based on keywords in your messages. When you mention a fractal type, a corresponding image is generated and displayed. Otherwise, the chat model responds conversationally.
+
+**Technology Stack:**
+- Rust/WASM for fractal generation
+- Transformers.js for chat model inference
+- Qwen1.5-0.5B-Chat model
+
+**Features:**
+- Keyword detection for fractal generation
+- 8 fractal types: Mandelbrot, Julia, Buddhabrot, Orbit-Trap, Gray-Scott, L-System, Flames, Strange Attractors
+- Conversational AI responses when no fractal keyword is detected
+- Real-time fractal generation (512×512 images)
+- Chat history with images embedded in conversation
+
+**WASM Module:** `wasm-fractal-chat`
+
+**Model:** Qwen1.5-0.5B-Chat via Transformers.js
+
+**Fractal Keywords:**
+- `fractal` - Random fractal from all types
+- `mandelbrot` - Classic Mandelbrot Set
+- `julia` - Julia Sets
+- `buddhabrot` or `nebulabrot` - Buddhabrot/Nebulabrot
+- `orbit-trap` - Orbit-Trap Fractals
+- `gray-scott`, `reaction`, or `diffusion` - Gray-Scott Reaction-Diffusion
+- `l-system`, `tree`, or `plant` - L-System Fractals
+- `flames` - Fractal Flames
+- `strange`, `attractors`, `lorenz`, `clifford`, or `de jong` - Strange Attractors
+
+**Key Files:**
+- Route: [`src/routes/fractal-chat.ts`](src/routes/fractal-chat.ts)
+- Rust Source: [`wasm-fractal-chat/src/lib.rs`](wasm-fractal-chat/src/lib.rs)
+- HTML: [`pages/fractal-chat.html`](pages/fractal-chat.html)
+
+The demo combines generative art with conversational AI, creating a unique interactive experience. Fractals are generated in real-time using optimized Rust algorithms compiled to WASM, while the chat model provides natural language interaction.
+
+---
+
+## Technical Architecture
+
+### Technology Stack
+
+**Core Technologies:**
+- **Rust**: Systems programming language compiled to WebAssembly
+- **TypeScript**: Type-safe frontend development
+- **Vite**: Fast build tool and dev server
+- **wasm-bindgen**: Rust-WASM interop
+
+**AI/ML Frameworks:**
+- **ONNX Runtime Web**: For SmolVLM models (WASM/WebGPU acceleration)
+- **Transformers.js**: For ViT-GPT2, DistilGPT-2, and Qwen models
+- **@huggingface/tokenizers**: Tokenization for language models
+
+**Build & Deployment:**
+- **Docker**: Containerized builds and deployment
+- **nginx**: Static file serving in production
+- **Render.com**: Hosting platform
+
+### WASM Modules Organization
+
+The project uses a Rust workspace with multiple WASM crates, each compiled independently:
+
+- `wasm-astar`: Pathfinding algorithm and game state management
+- `wasm-preprocess`: Image preprocessing for SmolVLM-500M (224×224)
+- `wasm-preprocess-256m`: Image preprocessing for SmolVLM-256M (512×512)
+- `wasm-preprocess-image-captioning`: Image preprocessing and filters for ViT-GPT2
+- `wasm-agent-tools`: Tool functions for the agent (calculate, process_text, get_stats)
+- `wasm-fractal-chat`: Fractal generation algorithms
+
+Each module is built using `wasm-bindgen` and optimized with `wasm-opt` for smaller binary sizes.
+
+### Routing System
+
+The application uses a client-side router (`src/main.ts`) that:
+- Detects the current pathname
+- Lazy-loads the appropriate route handler
+- Initializes the corresponding WASM module and UI
+- Handles errors gracefully with user-friendly messages
+
+Routes are defined in `src/main.ts` and each route has:
+- A TypeScript route handler (`src/routes/*.ts`)
+- An HTML page (`pages/*.html`)
+- A corresponding WASM module
+
+### Model Loading Strategies
+
+**ONNX Runtime Models (SmolVLM):**
+- Models are downloaded from Hugging Face
+- Cached using the Cache API for faster subsequent loads
+- CORS proxies are used when direct access fails
+- Progress tracking during download and initialization
+
+**Transformers.js Models:**
+- Models are loaded on-demand via Transformers.js
+- Automatic quantization and optimization
+- WebAssembly acceleration for inference
+- Model files are cached by the browser
+
+**Error Handling:**
+- Graceful degradation if models fail to load
+- Detailed error messages for debugging
+- Fallback to preprocessing-only mode when models unavailable
+
+---
 
 ## Building
 
@@ -315,6 +474,12 @@ Currently, no runtime environment variables are required. Add them to `.env.exam
 - Check that `dist/` directory contains all files
 - Verify nginx configuration (if using Docker)
 
+**Model loading fails**
+- Check browser console for CORS errors
+- Verify internet connection (models download from Hugging Face)
+- Try clearing browser cache
+- Check that CORS proxies are accessible
+
 ### Render.com Issues
 
 **Deployment fails**
@@ -336,19 +501,66 @@ sigma-wasm/
 ├── .dockerignore           # Docker build exclusions
 ├── render.yaml             # Render.com configuration
 ├── .env.example            # Environment variables template
-├── Cargo.toml              # Rust dependencies
+├── Cargo.toml              # Rust workspace configuration
 ├── package.json            # Node.js dependencies
 ├── vite.config.ts          # Vite configuration
 ├── tsconfig.json           # TypeScript configuration
 ├── scripts/
 │   ├── build.sh            # WASM build script
+│   ├── build-wasm.sh       # WASM build script
 │   ├── setup-local.sh      # Local setup script
 │   └── dev-local.sh        # Local dev server script
 ├── src/
-│   ├── lib.rs              # Rust main library
-│   ├── main.ts             # TypeScript entry point
-│   ├── types.ts             # TypeScript type definitions
-│   ├── styles.css           # Styles
-│   └── [rust modules]      # Rust source code
+│   ├── main.ts             # TypeScript entry point and router
+│   ├── types.ts            # TypeScript type definitions
+│   ├── styles.css          # Global styles
+│   ├── routes/             # Route handlers for each demo
+│   │   ├── astar.ts
+│   │   ├── preprocess-smolvlm-500m.ts
+│   │   ├── preprocess-smolvlm-256m.ts
+│   │   ├── image-captioning.ts
+│   │   ├── function-calling.ts
+│   │   └── fractal-chat.ts
+│   ├── models/             # Model integration code
+│   │   ├── smolvlm.ts
+│   │   ├── smolvlm-256m.ts
+│   │   ├── image-captioning.ts
+│   │   └── function-calling.ts
+│   ├── wasm/               # WASM loader utilities
+│   │   ├── loader.ts
+│   │   └── types.ts
+│   └── [rust modules]      # Shared Rust source (if any)
+├── pages/                  # HTML pages for each demo
+│   ├── astar.html
+│   ├── preprocess-smolvlm-500m.html
+│   ├── preprocess-smolvlm-256m.html
+│   ├── image-captioning.html
+│   ├── function-calling.html
+│   └── fractal-chat.html
+├── wasm-astar/             # A* pathfinding WASM crate
+│   ├── Cargo.toml
+│   └── src/lib.rs
+├── wasm-preprocess/        # Image preprocessing WASM crate (500M)
+│   ├── Cargo.toml
+│   └── src/lib.rs
+├── wasm-preprocess-256m/   # Image preprocessing WASM crate (256M)
+│   ├── Cargo.toml
+│   └── src/lib.rs
+├── wasm-preprocess-image-captioning/  # Image preprocessing WASM crate (ViT-GPT2)
+│   ├── Cargo.toml
+│   └── src/lib.rs
+├── wasm-agent-tools/       # Agent tools WASM crate
+│   ├── Cargo.toml
+│   └── src/lib.rs
+├── wasm-fractal-chat/      # Fractal generation WASM crate
+│   ├── Cargo.toml
+│   └── src/lib.rs
+├── pkg/                    # Compiled WASM modules (generated)
+│   ├── wasm_astar/
+│   ├── wasm_preprocess/
+│   ├── wasm_preprocess_256m/
+│   ├── wasm_preprocess_image_captioning/
+│   ├── wasm_agent_tools/
+│   └── wasm_fractal_chat/
 └── dist/                   # Production build output (gitignored)
 ```
