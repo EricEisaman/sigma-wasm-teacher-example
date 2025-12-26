@@ -24,6 +24,7 @@ services:
         - wasm-preprocess-256m/**
         - wasm-preprocess-image-captioning/**
         - wasm-agent-tools/**
+        - wasm-fractal-chat/**
         - Cargo.toml
         - package.json
         - vite.config.ts

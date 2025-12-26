@@ -500,6 +500,7 @@ export default defineConfig({
         'preprocess-smolvlm-256m': resolve(__dirname, 'pages/preprocess-smolvlm-256m.html'),
         'image-captioning': resolve(__dirname, 'pages/image-captioning.html'),
         'function-calling': resolve(__dirname, 'pages/function-calling.html'),
+        'fractal-chat': resolve(__dirname, 'pages/fractal-chat.html'),
       },
       output: {
         format: 'es',

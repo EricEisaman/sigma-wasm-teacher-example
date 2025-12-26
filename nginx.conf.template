@@ -84,6 +84,10 @@ server {
         try_files /pages/function-calling.html =404;
     }
     
+    location = /fractal-chat {
+        try_files /pages/fractal-chat.html =404;
+    }
+    
     # Root path serves landing page
     location = / {
         try_files /index.html =404;
