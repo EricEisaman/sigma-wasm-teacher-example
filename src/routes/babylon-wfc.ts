@@ -18,7 +18,7 @@ import { loadWasmModule, validateWasmModule } from '../wasm/loader';
 import { WasmLoadError, WasmInitError } from '../wasm/types';
 import { Engine, Scene, ArcRotateCamera, HemisphericLight, DirectionalLight, Vector3, Mesh, StandardMaterial, Color3, InstancedMesh } from '@babylonjs/core';
 import { AdvancedDynamicTexture, Button } from '@babylonjs/gui';
-import { pipeline, type TextGenerationPipeline } from '@xenova/transformers';
+import { pipeline, type TextGenerationPipeline, env } from '@xenova/transformers';
 
 /**
  * WASM module reference - stored as Record after validation
@@ -245,6 +245,79 @@ function validateBabylonWfcModule(exports: unknown): WasmModuleBabylonWfc | null
 // Qwen model configuration
 const MODEL_ID = 'Xenova/qwen1.5-0.5b-chat';
 
+// CORS proxy services for Hugging Face model loading
+const CORS_PROXY_SERVICES = [
+  'https://api.allorigins.win/raw?url=',
+  'https://corsproxy.io/?',
+  'https://api.codetabs.com/v1/proxy?quest=',
+] as const;
+
+/**
+ * Check if a URL needs CORS proxying
+ */
+function needsProxy(url: string): boolean {
+  return (
+    url.includes('huggingface.co') &&
+    !url.includes('cdn.jsdelivr.net') &&
+    !url.includes('api.allorigins.win') &&
+    !url.includes('corsproxy.io') &&
+    !url.includes('api.codetabs.com')
+  );
+}
+
+/**
+ * Custom fetch function with CORS proxy support
+ */
+async function customFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+  
+  // If URL doesn't need proxying, use normal fetch
+  if (!needsProxy(url)) {
+    return fetch(input, init);
+  }
+  
+  // Try each CORS proxy in order
+  for (const proxyBase of CORS_PROXY_SERVICES) {
+    try {
+      const proxyUrl = proxyBase + encodeURIComponent(url);
+      
+      const response = await fetch(proxyUrl, {
+        ...init,
+        redirect: 'follow',
+      });
+      
+      // Skip proxies that return error status codes
+      if (response.status >= 400 && response.status < 600) {
+        continue;
+      }
+      
+      // If response looks good, return it
+      if (response.ok) {
+        return response;
+      }
+    } catch {
+      // Try next proxy
+      continue;
+    }
+  }
+  
+  // If all proxies fail, try direct fetch as last resort
+  return fetch(input, init);
+}
+
+/**
+ * Set up custom fetch function for Transformers.js
+ */
+function setupCustomFetch(): void {
+  // Use proper type narrowing instead of type assertion
+  if (typeof env === 'object' && env !== null) {
+    const envRecord: Record<string, unknown> = env;
+    envRecord.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+      return customFetch(input, init);
+    };
+  }
+}
+
 // Qwen model state
 let textGenerationPipeline: TextGenerationPipeline | null = null;
 let isModelLoading = false;
@@ -268,6 +341,9 @@ async function loadQwenModel(onProgress?: (progress: number) => void): Promise<v
     if (onProgress) {
       onProgress(0.1);
     }
+
+    // Set up custom fetch with CORS proxy support before loading model
+    setupCustomFetch();
 
     const pipelineResult = await pipeline('text-generation', MODEL_ID, {
       progress_callback: (progress: { loaded: number; total: number }) => {

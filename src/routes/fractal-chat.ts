@@ -6,6 +6,100 @@ import { pipeline, type TextGenerationPipeline, env } from '@xenova/transformers
 // Using Qwen1.5-0.5B-Chat for better conversational quality
 const MODEL_ID = 'Xenova/qwen1.5-0.5b-chat';
 
+// CORS proxy services for Hugging Face model loading
+const CORS_PROXY_SERVICES = [
+  'https://api.allorigins.win/raw?url=',
+  'https://corsproxy.io/?',
+  'https://api.codetabs.com/v1/proxy?quest=',
+] as const;
+
+/**
+ * Check if a URL needs CORS proxying
+ */
+function needsProxy(url: string): boolean {
+  return (
+    url.includes('huggingface.co') &&
+    !url.includes('cdn.jsdelivr.net') &&
+    !url.includes('api.allorigins.win') &&
+    !url.includes('corsproxy.io') &&
+    !url.includes('api.codetabs.com')
+  );
+}
+
+/**
+ * Custom fetch function with CORS proxy support
+ */
+async function customFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+  
+  // If URL doesn't need proxying, use normal fetch
+  if (!needsProxy(url)) {
+    return fetch(input, init);
+  }
+  
+  if (addLogEntry) {
+    addLogEntry(`Custom fetch: Attempting to fetch via CORS proxy: ${url}`, 'info');
+  }
+  
+  // Try each CORS proxy in order
+  for (const proxyBase of CORS_PROXY_SERVICES) {
+    try {
+      const proxyUrl = proxyBase + encodeURIComponent(url);
+      if (addLogEntry) {
+        addLogEntry(`Trying proxy: ${proxyBase}`, 'info');
+      }
+      
+      const response = await fetch(proxyUrl, {
+        ...init,
+        redirect: 'follow',
+      });
+      
+      // Skip proxies that return error status codes
+      if (response.status >= 400 && response.status < 600) {
+        if (addLogEntry) {
+          addLogEntry(`Proxy ${proxyBase} returned error: ${response.status} ${response.statusText}`, 'warning');
+        }
+        continue;
+      }
+      
+      // If response looks good, return it
+      if (response.ok) {
+        if (addLogEntry) {
+          addLogEntry(`Successfully fetched via proxy: ${proxyBase}`, 'success');
+        }
+        return response;
+      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      if (addLogEntry) {
+        addLogEntry(`Proxy ${proxyBase} failed: ${errorMsg}`, 'warning');
+      }
+      // Try next proxy
+      continue;
+    }
+  }
+  
+  if (addLogEntry) {
+    addLogEntry('All CORS proxies failed, trying direct fetch as last resort', 'warning');
+  }
+  
+  // If all proxies fail, try direct fetch as last resort
+  return fetch(input, init);
+}
+
+/**
+ * Set up custom fetch function for Transformers.js
+ */
+function setupCustomFetch(): void {
+  // Use proper type narrowing instead of type assertion
+  if (typeof env === 'object' && env !== null) {
+    const envRecord: Record<string, unknown> = env;
+    envRecord.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+      return customFetch(input, init);
+    };
+  }
+}
+
 // Lazy WASM import - only load when init() is called
 let wasmModuleExports: {
   default: () => Promise<unknown>;
@@ -544,6 +638,9 @@ async function loadChatModel(): Promise<void> {
   }
   
   env.allowLocalModels = false;
+  
+  // Set up custom fetch with CORS proxy support before loading model
+  setupCustomFetch();
   
   textGenerationPipeline = await pipeline('text-generation', MODEL_ID);
   
