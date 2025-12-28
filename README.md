@@ -296,7 +296,7 @@ The Wave Function Collapse algorithm is a constraint-based procedural generation
   - Pre-constraints are set before WFC begins using hash map storage
   - This creates a natural-looking hexagon-shaped map
 
-- **Phase 2 - WFC Collapse**: 
+- **Phase 2 - WFC (Wave Function Collapse)**: 
   - All cells start in superposition (all 5 tile types possible)
   - Pre-constrained cells are already collapsed, so their constraints propagate immediately
   - Algorithm loop:
