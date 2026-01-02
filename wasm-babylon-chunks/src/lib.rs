@@ -802,18 +802,14 @@ pub fn generate_voronoi_regions(
     // Helper to get a random hex coordinate from the grid
     // Use floor() to ensure index is always in valid range [0, hex_count)
     // Math::random() returns [0, 1), so floor(random() * count) gives [0, count-1]
+    // This matches the pattern used in wasm-fractal-chat and other modules
     let get_random_hex = || {
         if hex_count > 0 {
-            let random_val = Math::random();
-            // Ensure random value is valid (not NaN or Infinity)
-            if random_val.is_finite() && random_val >= 0.0 && random_val < 1.0 {
-                let index = (random_val * hex_count as f64).floor() as usize;
-                // After floor(), index is guaranteed to be < hex_count, but check for safety
-                if index < hex_count {
-                    Some(hex_vec[index])
-                } else {
-                    None
-                }
+            // Math::random() always returns [0, 1), so floor() ensures index is in [0, hex_count)
+            let index = (Math::random() * hex_count as f64).floor() as usize;
+            // Safety check: after floor(), index should always be < hex_count
+            if index < hex_count {
+                Some(hex_vec[index])
             } else {
                 None
             }
