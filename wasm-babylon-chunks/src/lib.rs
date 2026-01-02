@@ -1,5 +1,4 @@
 use wasm_bindgen::prelude::*;
-use js_sys::Math;
 use std::sync::{LazyLock, Mutex};
 use std::collections::{HashMap, HashSet, BinaryHeap};
 use std::cmp::Ordering;
@@ -797,35 +796,21 @@ pub fn generate_voronoi_regions(
     }
     
     // Generate seed points by sampling from actual hex grid coordinates
+    // Use deterministic selection with prime multiplier for good distribution
+    // This ensures seeds are ALWAYS generated reliably
     let mut seeds: Vec<VoronoiSeed> = Vec::new();
-    
-    // Use a counter for deterministic fallback if random fails
-    // This ensures seeds are ALWAYS generated
     let mut seed_counter = 0;
     
-    // Helper function to get index - tries random first, falls back to deterministic
-    // Completely inlined to avoid any closure issues
-    let mut get_index = || -> usize {
+    // Generate forest seeds
+    for i in 0..forest_seeds {
         seed_counter += 1;
-        if hex_count > 0 {
-            // Try Math::random() first
-            let random_val = Math::random();
-            if random_val.is_finite() && random_val >= 0.0 && random_val < 1.0 {
-                let index = (random_val * hex_count as f64).floor() as usize;
-                if index < hex_count {
-                    return index;
-                }
-            }
-            // Fallback: deterministic using prime multiplier for good distribution
-            (seed_counter * 7919) % hex_count
+        // Use deterministic selection: (counter * prime) % count for good distribution
+        // Prime 7919 provides good pseudo-random distribution
+        let index = if hex_count > 0 {
+            ((seed_counter as usize * 7919) + (i as usize * 997)) % hex_count
         } else {
             0
-        }
-    };
-    
-    // Generate forest seeds - always generate even if random fails
-    for _ in 0..forest_seeds {
-        let index = get_index();
+        };
         let (q, r) = hex_vec[index];
         seeds.push(VoronoiSeed {
             q,
@@ -835,8 +820,13 @@ pub fn generate_voronoi_regions(
     }
     
     // Generate water seeds
-    for _ in 0..water_seeds {
-        let index = get_index();
+    for i in 0..water_seeds {
+        seed_counter += 1;
+        let index = if hex_count > 0 {
+            ((seed_counter as usize * 7919) + (i as usize * 997)) % hex_count
+        } else {
+            0
+        };
         let (q, r) = hex_vec[index];
         seeds.push(VoronoiSeed {
             q,
@@ -846,8 +836,13 @@ pub fn generate_voronoi_regions(
     }
     
     // Generate grass seeds
-    for _ in 0..grass_seeds {
-        let index = get_index();
+    for i in 0..grass_seeds {
+        seed_counter += 1;
+        let index = if hex_count > 0 {
+            ((seed_counter as usize * 7919) + (i as usize * 997)) % hex_count
+        } else {
+            0
+        };
         let (q, r) = hex_vec[index];
         seeds.push(VoronoiSeed {
             q,
