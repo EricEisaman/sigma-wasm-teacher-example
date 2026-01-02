@@ -273,18 +273,21 @@ function validateBabylonChunksModule(exports: unknown): WasmModuleBabylonChunks 
   }
   
   // Validate all required functions exist on exports
-  const generateLayoutValue = getProperty(exports, 'generate_layout');
-  const getTileAtValue = getProperty(exports, 'get_tile_at');
-  const clearLayoutValue = getProperty(exports, 'clear_layout');
-  const setPreConstraintValue = getProperty(exports, 'set_pre_constraint');
-  const clearPreConstraintsValue = getProperty(exports, 'clear_pre_constraints');
-  const getStatsValue = getProperty(exports, 'get_stats');
-  const generateVoronoiRegionsValue = getProperty(exports, 'generate_voronoi_regions');
-  const validateRoadConnectivityValue = getProperty(exports, 'validate_road_connectivity');
-  const hexAstarValue = getProperty(exports, 'hex_astar');
-  const buildPathBetweenRoadsValue = getProperty(exports, 'build_path_between_roads');
-  const generateRoadNetworkGrowingTreeValue = getProperty(exports, 'generate_road_network_growing_tree');
-  const getWasmVersionValue = getProperty(exports, 'get_wasm_version');
+  // Functions should be on the module object (wasmModuleRecord), not the init result
+  // But we check exports first, then fall back to wasmModuleRecord if needed
+  const generateLayoutValue = getProperty(exports, 'generate_layout') || (wasmModuleRecord ? getProperty(wasmModuleRecord, 'generate_layout') : undefined);
+  const getTileAtValue = getProperty(exports, 'get_tile_at') || (wasmModuleRecord ? getProperty(wasmModuleRecord, 'get_tile_at') : undefined);
+  const clearLayoutValue = getProperty(exports, 'clear_layout') || (wasmModuleRecord ? getProperty(wasmModuleRecord, 'clear_layout') : undefined);
+  const setPreConstraintValue = getProperty(exports, 'set_pre_constraint') || (wasmModuleRecord ? getProperty(wasmModuleRecord, 'set_pre_constraint') : undefined);
+  const clearPreConstraintsValue = getProperty(exports, 'clear_pre_constraints') || (wasmModuleRecord ? getProperty(wasmModuleRecord, 'clear_pre_constraints') : undefined);
+  const getStatsValue = getProperty(exports, 'get_stats') || (wasmModuleRecord ? getProperty(wasmModuleRecord, 'get_stats') : undefined);
+  const generateVoronoiRegionsValue = getProperty(exports, 'generate_voronoi_regions') || (wasmModuleRecord ? getProperty(wasmModuleRecord, 'generate_voronoi_regions') : undefined);
+  const validateRoadConnectivityValue = getProperty(exports, 'validate_road_connectivity') || (wasmModuleRecord ? getProperty(wasmModuleRecord, 'validate_road_connectivity') : undefined);
+  const hexAstarValue = getProperty(exports, 'hex_astar') || (wasmModuleRecord ? getProperty(wasmModuleRecord, 'hex_astar') : undefined);
+  const buildPathBetweenRoadsValue = getProperty(exports, 'build_path_between_roads') || (wasmModuleRecord ? getProperty(wasmModuleRecord, 'build_path_between_roads') : undefined);
+  const generateRoadNetworkGrowingTreeValue = getProperty(exports, 'generate_road_network_growing_tree') || (wasmModuleRecord ? getProperty(wasmModuleRecord, 'generate_road_network_growing_tree') : undefined);
+  // get_wasm_version should be on the module object, not the init result
+  const getWasmVersionValue = wasmModuleRecord ? getProperty(wasmModuleRecord, 'get_wasm_version') : getProperty(exports, 'get_wasm_version');
   
   if (typeof generateLayoutValue !== 'function') {
     missingExports.push('generate_layout (function)');
