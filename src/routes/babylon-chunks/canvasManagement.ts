@@ -14,6 +14,8 @@ import { tileTypeFromNumber, tileTypeToNumber } from './wasmManagement';
 import * as HexUtils from './hexUtils';
 import type { WorldMap, Chunk } from './chunkManagement';
 import { CameraManager } from './cameraManager';
+import { CONSTRAINTS } from './constraints';
+import { getTileColor as getTileColorFromConfig, getAllTileTypes, DEFAULT_TILE_MODEL_URL } from './tiles';
 
 /**
  * Tile Configuration - centralized tile dimensions
@@ -39,20 +41,10 @@ export const CAMERA_CONFIG = {
 
 /**
  * Get color for a tile type
+ * Uses the TILES config object for centralized configuration
  */
 export function getTileColor(tileType: TileType): Color3 {
-  switch (tileType.type) {
-    case 'grass':
-      return new Color3(0.2, 0.8, 0.2); // Green
-    case 'building':
-      return new Color3(0.96, 0.96, 0.96); // Off-white
-    case 'road':
-      return new Color3(0.326, 0.336, 0.326); // Very dark gray
-    case 'forest':
-      return new Color3(0.05, 0.3, 0.05); // Dark green
-    case 'water':
-      return new Color3(0, 0.149, 1.0); // Bright brilliant blue
-  }
+  return getTileColorFromConfig(tileType);
 }
 
 /**
@@ -60,10 +52,10 @@ export function getTileColor(tileType: TileType): Color3 {
  */
 export function getDefaultConstraints(): LayoutConstraints {
   return {
-    buildingDensity: 'medium',
-    clustering: 'random',
-    grassRatio: 0.3,
-    buildingSizeHint: 'medium',
+    buildingDensity: CONSTRAINTS.defaultBuildingDensity,
+    clustering: CONSTRAINTS.defaultClustering,
+    grassRatio: CONSTRAINTS.defaultGrassRatio,
+    buildingSizeHint: CONSTRAINTS.defaultBuildingSizeHint,
   };
 }
 
@@ -123,7 +115,7 @@ export class CanvasManager {
   private currentRings = 1;
   private wasmManager: WasmManager;
   private logFn: ((message: string, type?: 'info' | 'success' | 'warning' | 'error') => void) | null;
-  private generatePreConstraintsFn: ((constraints: LayoutConstraints) => Array<{ q: number; r: number; tileType: TileType }>) | null = null;
+  private generatePreConstraintsFn: ((constraints: LayoutConstraints, worldMap?: WorldMap, chunksToGenerate?: Array<Chunk>) => Array<{ q: number; r: number; tileType: TileType }>) | null = null;
   private worldMap: WorldMap | null = null;
   private isTestMode: boolean = false;
   private currentTileText: TextBlock | null = null;
@@ -136,7 +128,7 @@ export class CanvasManager {
   constructor(
     wasmManager: WasmManager,
     logFn?: (message: string, type?: 'info' | 'success' | 'warning' | 'error') => void,
-    generatePreConstraintsFn?: (constraints: LayoutConstraints) => Array<{ q: number; r: number; tileType: TileType }>,
+    generatePreConstraintsFn?: (constraints: LayoutConstraints, worldMap?: WorldMap, chunksToGenerate?: Array<Chunk>) => Array<{ q: number; r: number; tileType: TileType }>,
     isTestMode?: boolean
   ) {
     this.wasmManager = wasmManager;
@@ -157,7 +149,7 @@ export class CanvasManager {
   /**
    * Set the function to generate pre-constraints
    */
-  setGeneratePreConstraintsFn(fn: (constraints: LayoutConstraints) => Array<{ q: number; r: number; tileType: TileType }>): void {
+  setGeneratePreConstraintsFn(fn: (constraints: LayoutConstraints, worldMap?: WorldMap, chunksToGenerate?: Array<Chunk>) => Array<{ q: number; r: number; tileType: TileType }>): void {
     this.generatePreConstraintsFn = fn;
   }
 
@@ -249,7 +241,9 @@ export class CanvasManager {
         this.log('Loading hex_tile.glb model...', 'info');
       }
       
-      const glbUrl = 'https://raw.githubusercontent.com/EricEisaman/assets/main/items/hex_tile.glb';
+      // Use default model URL from TILES config
+      // Currently all tile types use the same model, but in the future each type can have its own URL
+      const glbUrl = DEFAULT_TILE_MODEL_URL;
       const result = await SceneLoader.ImportMeshAsync('', glbUrl, '', this.scene);
       
       if (result.meshes.length === 0) {
@@ -325,13 +319,8 @@ export class CanvasManager {
       
       // Create a base mesh for each tile type with its own material
       // This matches the working pattern from babylon-wfc.ts
-      const tileTypes: TileType[] = [
-        { type: 'grass' },
-        { type: 'building' },
-        { type: 'road' },
-        { type: 'forest' },
-        { type: 'water' },
-      ];
+      // Get all tile types from TILES config
+      const tileTypes = getAllTileTypes();
       
       for (const tileType of tileTypes) {
         // Clone the base mesh for each tile type
@@ -776,7 +765,7 @@ export class CanvasManager {
               rings: requiredRings,
             };
             
-            const preConstraints = this.generatePreConstraintsFn(expandedConstraints);
+            const preConstraints = this.generatePreConstraintsFn(expandedConstraints, this.worldMap, chunksNeedingGeneration);
             
             if (this.logFn) {
               this.log(`Generated ${preConstraints.length} pre-constraints for ${chunksNeedingGeneration.length} new chunks`, 'info');
@@ -834,7 +823,7 @@ export class CanvasManager {
       // Original single-grid pre-constraint generation
       if (!constraints && this.generatePreConstraintsFn) {
         wasmModule.clear_pre_constraints();
-        const preConstraints = this.generatePreConstraintsFn(constraintsToUse);
+        const preConstraints = this.generatePreConstraintsFn(constraintsToUse, this.worldMap ?? undefined);
         for (const preConstraint of preConstraints) {
           const tileNum = tileTypeToNumber(preConstraint.tileType);
           wasmModule.set_pre_constraint(preConstraint.q, preConstraint.r, tileNum);
@@ -842,7 +831,7 @@ export class CanvasManager {
       } else if (constraints && this.generatePreConstraintsFn) {
         // If constraints are provided, still generate pre-constraints
         wasmModule.clear_pre_constraints();
-        const preConstraints = this.generatePreConstraintsFn(constraints);
+        const preConstraints = this.generatePreConstraintsFn(constraints, this.worldMap ?? undefined);
         for (const preConstraint of preConstraints) {
           const tileNum = tileTypeToNumber(preConstraint.tileType);
           wasmModule.set_pre_constraint(preConstraint.q, preConstraint.r, tileNum);

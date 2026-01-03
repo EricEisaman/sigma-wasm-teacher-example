@@ -432,9 +432,9 @@ export const init = async (): Promise<void> => {
     (text: string) => llmManager.generateEmbedding(text)
   );
   
-  // Get initial rings value from dropdown (default 3)
+  // Get initial rings value from dropdown (default 10)
   const initialRingsSelectEl = document.getElementById('ringsSelect');
-  let initialRings = 3; // Default value
+  let initialRings = 10; // Default value
   if (initialRingsSelectEl && initialRingsSelectEl instanceof HTMLSelectElement) {
     const selectedRings = Number.parseInt(initialRingsSelectEl.value, 10);
     if (!Number.isNaN(selectedRings) && selectedRings >= 0 && selectedRings <= 50) {
