@@ -323,7 +323,9 @@ function ensureNearestNeighborChunkIsVisible(
   logFn?: (message: string, type?: 'info' | 'success' | 'warning' | 'error') => void
 ): boolean {
   const chunkRadius = wasmModule.calculate_chunk_radius(rings);
-  const threshold = chunkRadius * 3;
+  // Use a more aggressive threshold (2.5x instead of 3x) to preload neighbors earlier
+  // This reduces hiccups when approaching chunk borders
+  const threshold = chunkRadius * 2.5;
   const thresholdWorld = threshold * hexSize * 1.5;
   
   const nearestNeighbor = findNearestNeighborChunk(
@@ -731,9 +733,17 @@ export const init = async (): Promise<void> => {
       canvasManager.updateFloatingOrigin();
       
       // Check chunk loading every CHECK_INTERVAL frames (only if player is enabled)
-      if (frameCount % CHECK_INTERVAL === 0 && player && player.getEnabled()) {
+      // Also check more frequently (every 5 frames) when near chunk borders to reduce hiccups
+      const isNearBorder = currentChunkHex !== null && previousTileHex !== null;
+      const checkInterval = isNearBorder ? 5 : CHECK_INTERVAL;
+      
+      if (frameCount % checkInterval === 0 && player && player.getEnabled()) {
+        // Get world hex offset from floating origin
+        const worldHexOffset = canvasManager.getWorldHexOffset();
+        
         // Get current tile hex coordinate from player - player is the source of truth
-        const currentTileHex = player.getCurrentTileHex(TILE_CONFIG.hexSize);
+        // Pass world hex offset to account for floating origin shifts
+        const currentTileHex = player.getCurrentTileHex(TILE_CONFIG.hexSize, worldHexOffset);
         
         // Use the same function for both UI update and processing
         const tileChanged = checkAndUpdateTile(currentTileHex, worldMap, canvasManager);
@@ -1015,9 +1025,17 @@ export const init = async (): Promise<void> => {
           newCanvasManager.updateFloatingOrigin();
           
           // Check chunk loading every CHECK_INTERVAL frames (only if player is enabled)
-          if (frameCount % CHECK_INTERVAL === 0 && player && player.getEnabled()) {
+          // Also check more frequently (every 5 frames) when near chunk borders to reduce hiccups
+          const isNearBorderForReinit = currentChunkHex !== null && previousTileHex !== null;
+          const checkIntervalForReinit = isNearBorderForReinit ? 5 : CHECK_INTERVAL;
+          
+          if (frameCount % checkIntervalForReinit === 0 && player && player.getEnabled()) {
+            // Get world hex offset from floating origin
+            const worldHexOffsetForReinit = newCanvasManager.getWorldHexOffset();
+            
             // Get current tile hex coordinate from player - player is the source of truth
-            const currentTileHex = player.getCurrentTileHex(TILE_CONFIG.hexSize);
+            // Pass world hex offset to account for floating origin shifts
+            const currentTileHex = player.getCurrentTileHex(TILE_CONFIG.hexSize, worldHexOffsetForReinit);
             
             // Use the same function for both UI update and processing
             const tileChanged = checkAndUpdateTile(currentTileHex, newWorldMap, newCanvasManager);
@@ -1040,7 +1058,9 @@ export const init = async (): Promise<void> => {
             if (tileChanged && currentChunkHex && wasmModuleForReinit) {
               // Use currentTileHex from player (source of truth) - already fetched above
               const chunkRadius = wasmModuleForReinit.calculate_chunk_radius(newCanvasManager.getCurrentRings());
-              const threshold = chunkRadius * 3;
+              // Use a more aggressive threshold (2.5x instead of 3x) to preload neighbors earlier
+              // This reduces hiccups when approaching chunk borders
+              const threshold = chunkRadius * 2.5;
               const thresholdWorld = threshold * TILE_CONFIG.hexSize * 1.5;
               
               const nearestNeighbor = findNearestNeighborChunk(

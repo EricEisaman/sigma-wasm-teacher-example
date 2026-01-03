@@ -124,6 +124,7 @@ export class CanvasManager {
   private player: { getAvatar: () => { getMesh: () => Mesh | null } } | null = null;
   private floatingOriginThreshold: number = 1000; // Distance threshold for floating origin updates
   private currentFloatingOrigin: Vector3 = Vector3.Zero(); // Current floating origin position
+  private worldHexOffset: { q: number; r: number } = { q: 0, r: 0 }; // Accumulated hex offset from floating origin shifts
 
   constructor(
     wasmManager: WasmManager,
@@ -1432,6 +1433,16 @@ export class CanvasManager {
       // Calculate offset to shift all meshes (clone to avoid mutating avatarPosition)
       const offset = avatarPosition.clone().subtract(this.currentFloatingOrigin);
       
+      // Calculate hex offset for this shift to maintain world hex coordinate accuracy
+      // Convert the world offset to hex coordinates using TILE_CONFIG.hexSize
+      // This tracks how many hexes the floating origin has shifted
+      const hexOffset = HexUtils.HEX_UTILS.worldToHex(offset.x, offset.z, TILE_CONFIG.hexSize);
+      
+      // Accumulate hex offset (add to existing offset)
+      // This maintains the true world hex coordinate even after floating origin shifts
+      this.worldHexOffset.q += hexOffset.q;
+      this.worldHexOffset.r += hexOffset.r;
+      
       // Shift all meshes in the scene to maintain precision
       // This effectively moves the world coordinate system to keep player near origin
       // All meshes including the avatar are shifted to maintain relative positions
@@ -1455,9 +1466,17 @@ export class CanvasManager {
       this.currentFloatingOrigin = avatarPosition.clone();
       
       if (this.logFn) {
-        this.log(`Floating origin updated to player position: (${this.currentFloatingOrigin.x.toFixed(2)}, ${this.currentFloatingOrigin.y.toFixed(2)}, ${this.currentFloatingOrigin.z.toFixed(2)})`, 'info');
+        this.log(`Floating origin updated to player position: (${this.currentFloatingOrigin.x.toFixed(2)}, ${this.currentFloatingOrigin.y.toFixed(2)}, ${this.currentFloatingOrigin.z.toFixed(2)}), hex offset: (${this.worldHexOffset.q}, ${this.worldHexOffset.r})`, 'info');
       }
     }
+  }
+
+  /**
+   * Get the world hex offset accumulated from floating origin shifts
+   * This offset must be added to local hex coordinates to get true world hex coordinates
+   */
+  getWorldHexOffset(): { q: number; r: number } {
+    return { q: this.worldHexOffset.q, r: this.worldHexOffset.r };
   }
 
   /**
