@@ -426,7 +426,7 @@ export const init = async (): Promise<void> => {
   // Allow Enter key to set message
   faveGumInput.addEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'Enter' && WASM_HELLO.wasmModule) {
-      const newGum = messageInput.value.trim();
+      const newGum = faveGumInput.value.trim();
       if (newGum) {
         WASM_HELLO.wasmModule.set_fave_gum(newGum);
         faveGumDisplay.textContent = WASM_HELLO.wasmModule.get_fave_gum();
