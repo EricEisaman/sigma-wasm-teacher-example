@@ -16,8 +16,8 @@ struct HelloState {
     counter: i32,
     /// Message string that can be set and retrieved
     message: String,
-    /// Gum string that can be set and retrieved
-    gum: String,
+    /// Car string that can be set and retrieved
+    car: String,
 }
 
 impl HelloState {
@@ -26,7 +26,7 @@ impl HelloState {
         HelloState {
             counter: 0,
             message: String::from("Rust WASM is so Sigma!"),
-            gum: String::from("Hubba Bubba"),
+            car: String::from("Hubba Bubba"),
         }
     }
     
@@ -50,14 +50,14 @@ impl HelloState {
         self.message = message;
     }
 
-    /// Get the current gum
-    fn get_fave_gum(&self) -> String {
-        self.gum.clone()
+    /// Get the current car
+    fn get_fave_car(&self) -> String {
+        self.car.clone()
     }
     
-    /// Set a new gum
-    fn set_fave_gum(&mut self, gum: String) {
-        self.gum = gum;
+    /// Set a new car
+    fn set_fave_car(&mut self, car: String) {
+        self.car = car;
     }
 }
 
@@ -144,30 +144,30 @@ pub fn set_message(message: String) {
     state.set_message(message);
 }
 
-/// Get the current gum
+/// Get the current car
 /// 
 /// **Learning Point**: Strings in Rust need to be converted to JavaScript strings.
 /// `wasm-bindgen` handles this automatically when you return a `String` from a
 /// `#[wasm_bindgen]` function.
 /// 
-/// @returns The current gum as a JavaScript string
+/// @returns The current car as a JavaScript string
 #[wasm_bindgen]
-pub fn get_fave_gum() -> String {
+pub fn get_fave_car() -> String {
     let state = HELLO_STATE.lock().unwrap();
-    state.get_fave_gum()
+    state.get_fave_car()
 }
 
-/// Set a new gum
+/// Set a new car
 /// 
 /// **Learning Point**: JavaScript strings are automatically converted to Rust `String`
 /// when passed as parameters to `#[wasm_bindgen]` functions.
 /// 
 /// **To extend**: You could add validation, length limits, or formatting here.
 /// 
-/// @param gum - The new gum to set
+/// @param car - The new car to set
 #[wasm_bindgen]
-pub fn set_fave_gum(gum: String) {
+pub fn set_fave_car(car: String) {
     let mut state = HELLO_STATE.lock().unwrap();
-    state.set_fave_gum(gum);
+    state.set_fave_car(car);
 }
 
