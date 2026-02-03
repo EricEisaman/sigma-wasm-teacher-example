@@ -31,6 +31,8 @@ let wasmModuleExports: {
   set_message: (message: string) => void;
   get_fave_car: () => string;
   set_fave_car: (car: string) => void;
+  get_fave_team: () => string;
+  set_fave_team: (team: string) => void;
 } | null = null;
 
 /**
@@ -79,6 +81,12 @@ const getInitWasm = async (): Promise<unknown> => {
     if ('set_fave_car' in moduleUnknown) {
       moduleKeys.push('set_fave_car');
     }
+    if ('get_fave_team' in moduleUnknown) {
+      moduleKeys.push('get_fave_team');
+    }
+    if ('set_fave_team' in moduleUnknown) {
+      moduleKeys.push('set_fave_team');
+    }
     
     // Get all keys for error messages
     const allKeys = Object.keys(moduleUnknown);
@@ -109,6 +117,12 @@ const getInitWasm = async (): Promise<unknown> => {
     if (!('set_fave_car' in moduleUnknown) || typeof moduleUnknown.set_fave_car !== 'function') {
       throw new Error(`Module missing 'set_fave_car' export. Available: ${allKeys.join(', ')}`);
     }
+    if (!('get_fave_team' in moduleUnknown) || typeof moduleUnknown.get_fave_team !== 'function') {
+      throw new Error(`Module missing 'get_fave_team' export. Available: ${allKeys.join(', ')}`);
+    }
+    if (!('set_fave_team' in moduleUnknown) || typeof moduleUnknown.set_fave_team !== 'function') {
+      throw new Error(`Module missing 'set_fave_team' export. Available: ${allKeys.join(', ')}`);
+    }
     
     // Extract and assign functions - we've validated they exist and are functions above
     // Access properties directly after validation
@@ -120,6 +134,8 @@ const getInitWasm = async (): Promise<unknown> => {
     const setMessageFunc = moduleUnknown.set_message;
     const getFaveCarFunc = moduleUnknown.get_fave_car;
     const setFaveCarFunc = moduleUnknown.set_fave_car;
+    const getFaveTeamFunc = moduleUnknown.get_fave_team;
+    const setFaveTeamFunc = moduleUnknown.set_fave_team;
     
     if (typeof defaultFunc !== 'function') {
       throw new Error('default export is not a function');
@@ -145,6 +161,12 @@ const getInitWasm = async (): Promise<unknown> => {
     if (typeof setFaveCarFunc !== 'function') {
       throw new Error('set_fave_car export is not a function');
     }
+    if (typeof getFaveTeamFunc !== 'function') {
+      throw new Error('get_fave_team export is not a function');
+    }
+    if (typeof setFaveTeamFunc !== 'function') {
+      throw new Error('set_fave_team export is not a function');
+    }
     
     // TypeScript can't narrow Function to specific signatures after validation
     // Runtime validation ensures these are safe
@@ -165,6 +187,10 @@ const getInitWasm = async (): Promise<unknown> => {
       get_fave_car: getFaveCarFunc as () => string,
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       set_fave_car: setFaveCarFunc as (car: string) => void,
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      get_fave_team: getFaveTeamFunc as () => string,
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      set_fave_team: setFaveTeamFunc as (team: string) => void,
     };
   }
   if (!wasmModuleExports) {
@@ -224,7 +250,7 @@ function validateHelloModule(exports: unknown): WasmModuleHello | null {
     missingExports.push('memory (WebAssembly.Memory)');
   }
   
-  // Check wasmModuleExports for functions
+  // wasmModuleExports for functions
   if (!wasmModuleExports) {
     missingExports.push('module exports (wasmModuleExports is null)');
   } else {
@@ -248,6 +274,12 @@ function validateHelloModule(exports: unknown): WasmModuleHello | null {
     }
     if (typeof wasmModuleExports.set_fave_car !== 'function') {
       missingExports.push('set_fave_car (function)');
+    }
+    if (typeof wasmModuleExports.get_fave_team !== 'function') {
+      missingExports.push('get_fave_team (function)');
+    }
+    if (typeof wasmModuleExports.set_fave_team !== 'function') {
+      missingExports.push('set_fave_team (function)');
     }
   }
   
@@ -275,6 +307,8 @@ function validateHelloModule(exports: unknown): WasmModuleHello | null {
     set_message: wasmModuleExports.set_message,
     get_fave_car: wasmModuleExports.get_fave_car,
     set_fave_car: wasmModuleExports.set_fave_car,
+    get_fave_team: wasmModuleExports.get_fave_team,
+    set_fave_team: wasmModuleExports.set_fave_team,
   };
 }
 
@@ -343,15 +377,19 @@ export const init = async (): Promise<void> => {
   const counterDisplay = document.getElementById('counter-display');
   const messageDisplay = document.getElementById('message-display');
   const faveCarDisplay = document.getElementById('fave-car-display');
+  const faveTeamDisplay = document.getElementById('fave-team-display');
   const incrementBtn = document.getElementById('increment-btn');
   const messageInputEl = document.getElementById('message-input');
   const setMessageBtn = document.getElementById('set-message-btn');
   const faveCarInputEl = document.getElementById('fave-car-input');
   const setFaveCarBtn = document.getElementById('set-fave-car-btn');
+  const faveTeamInputEl = document.getElementById('fave-team-input');
+  const setFaveTeamBtn = document.getElementById('set-fave-team-btn');
   
   if (!counterDisplay || !messageDisplay || 
     !incrementBtn || !messageInputEl || !setMessageBtn ||
-    !faveCarDisplay || !faveCarInputEl || !setFaveCarBtn
+    !faveCarDisplay || !faveCarInputEl || !setFaveCarBtn ||
+    !faveTeamDisplay || !faveTeamInputEl || !setFaveTeamBtn
   ) {
     throw new Error('Required UI elements not found');
   }
@@ -369,6 +407,13 @@ export const init = async (): Promise<void> => {
   }
   
   const faveCarInput = faveCarInputEl;
+
+  // Type narrowing for input element
+  if (!(faveTeamInputEl instanceof HTMLInputElement)) {
+    throw new Error('fave-team-input element is not an HTMLInputElement');
+  }
+  
+  const faveTeamInput = faveTeamInputEl;
   
   // Update display with initial values
   // **Learning Point**: We call WASM functions directly from TypeScript.
@@ -377,6 +422,7 @@ export const init = async (): Promise<void> => {
     counterDisplay.textContent = WASM_HELLO.wasmModule.get_counter().toString();
     messageDisplay.textContent = WASM_HELLO.wasmModule.get_message();
     faveCarDisplay.textContent = WASM_HELLO.wasmModule.get_fave_car();
+    faveTeamDisplay.textContent = WASM_HELLO.wasmModule.get_fave_team();
   }
   
   // Set up event handlers
@@ -431,6 +477,29 @@ export const init = async (): Promise<void> => {
         WASM_HELLO.wasmModule.set_fave_car(newCar);
         faveCarDisplay.textContent = WASM_HELLO.wasmModule.get_fave_car();
         faveCarInput.value = '';
+      }
+    }
+  });
+
+  setFaveTeamBtn.addEventListener('click', () => {
+    if (WASM_HELLO.wasmModule && faveTeamInput) {
+      const newTeam = faveTeamInput.value.trim();
+      if (newTeam) {
+        WASM_HELLO.wasmModule.set_fave_team(newTeam);
+        faveTeamDisplay.textContent = WASM_HELLO.wasmModule.get_fave_team();
+        faveTeamInput.value = '';
+      }
+    }
+  });
+
+  // Allow Enter key to set team
+  faveTeamInput.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Enter' && WASM_HELLO.wasmModule) {
+      const newTeam = faveTeamInput.value.trim();
+      if (newTeam) {
+        WASM_HELLO.wasmModule.set_fave_team(newTeam);
+        faveTeamDisplay.textContent = WASM_HELLO.wasmModule.get_fave_team();
+        faveTeamInput.value = '';
       }
     }
   });
