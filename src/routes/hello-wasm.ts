@@ -33,6 +33,8 @@ let wasmModuleExports: {
   set_fave_color: (color: string) => void;
   get_fave_squishy: () => string;
   set_fave_squishy: (squishy: string) => void;
+  get_decimal_number: () => number;
+  set_decimal_number: (decimal_number: number) => void;
 } | null = null;
 
 /**
@@ -87,6 +89,12 @@ const getInitWasm = async (): Promise<unknown> => {
     if ('set_fave_squishy' in moduleUnknown) {
       moduleKeys.push('set_fave_squishy');
     }
+    if ('get_decimal_number' in moduleUnknown) {
+      moduleKeys.push('get_decimal_number');
+    }
+    if ('set_decimal_number' in moduleUnknown) {
+      moduleKeys.push('set_decimal_number');
+    }
     
     // Get all keys for error messages
     const allKeys = Object.keys(moduleUnknown);
@@ -123,6 +131,12 @@ const getInitWasm = async (): Promise<unknown> => {
     if (!('set_fave_squishy' in moduleUnknown) || typeof moduleUnknown.set_fave_squishy !== 'function') {
       throw new Error(`Module missing 'set_fave_squishy' export. Available: ${allKeys.join(', ')}`);
     }
+    if (!('get_decimal_number' in moduleUnknown) || typeof moduleUnknown.get_decimal_number !== 'function') {
+      throw new Error(`Module missing 'get_decimal_number' export. Available: ${allKeys.join(', ')}`);
+    }
+    if (!('set_decimal_number' in moduleUnknown) || typeof moduleUnknown.set_decimal_number !== 'function') {
+      throw new Error(`Module missing 'set_decimal_number' export. Available: ${allKeys.join(', ')}`);
+    }
     
     // Extract and assign functions - we've validated they exist and are functions above
     // Access properties directly after validation
@@ -136,6 +150,8 @@ const getInitWasm = async (): Promise<unknown> => {
     const setFaveColorFunc = moduleUnknown.set_fave_color;
     const getFaveSquishyFunc = moduleUnknown.get_fave_squishy;
     const setFaveSquishyFunc = moduleUnknown.set_fave_squishy;
+    const getDecimalNumberFunc = moduleUnknown.get_decimal_number;
+    const setDecimalNumberFunc = moduleUnknown.set_decimal_number;
     
     if (typeof defaultFunc !== 'function') {
       throw new Error('default export is not a function');
@@ -167,6 +183,12 @@ const getInitWasm = async (): Promise<unknown> => {
     if (typeof setFaveSquishyFunc !== 'function') {
       throw new Error('set_fave_squishy export is not a function');
     }
+    if (typeof getDecimalNumberFunc !== 'function') {
+      throw new Error('get_decimal_number export is not a function');
+    }
+    if (typeof setDecimalNumberFunc !== 'function') {
+      throw new Error('set_decimal_number export is not a function');
+    }
     
     // TypeScript can't narrow Function to specific signatures after validation
     // Runtime validation ensures these are safe
@@ -191,6 +213,10 @@ const getInitWasm = async (): Promise<unknown> => {
       get_fave_squishy: getFaveSquishyFunc as () => string,
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       set_fave_squishy: setFaveSquishyFunc as (squishy: string) => void,
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      get_decimal_number: getDecimalNumberFunc as () => number,
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      set_decimal_number: setDecimalNumberFunc as (decimal_number: number) => void,
     };
   }
   if (!wasmModuleExports) {
@@ -281,6 +307,12 @@ function validateHelloModule(exports: unknown): WasmModuleHello | null {
     if (typeof wasmModuleExports.set_fave_squishy !== 'function') {
       missingExports.push('set_fave_squishy (function)');
     }
+    if (typeof wasmModuleExports.get_decimal_number !== 'function') {
+      missingExports.push('get_decimal_number (function)');
+    }
+    if (typeof wasmModuleExports.set_decimal_number !== 'function') {
+      missingExports.push('set_decimal_number (function)');
+    }
   }
   
   if (missingExports.length > 0) {
@@ -309,6 +341,8 @@ function validateHelloModule(exports: unknown): WasmModuleHello | null {
     set_fave_color: wasmModuleExports.set_fave_color,
     get_fave_squishy: wasmModuleExports.get_fave_squishy,
     set_fave_squishy: wasmModuleExports.set_fave_squishy,
+    get_decimal_number: wasmModuleExports.get_decimal_number,
+    set_decimal_number: wasmModuleExports.set_decimal_number,
   };
 }
 
@@ -378,6 +412,7 @@ export const init = async (): Promise<void> => {
   const messageDisplay = document.getElementById('message-display');
   const faveColorDisplay = document.getElementById('fave-color-display');
   const faveSquishyDisplay = document.getElementById('fave-squishy-display');
+  const decimalDisplay = document.getElementById('decimal-display');
   const incrementBtn = document.getElementById('increment-btn');
   const messageInputEl = document.getElementById('message-input');
   const setMessageBtn = document.getElementById('set-message-btn');
@@ -385,11 +420,14 @@ export const init = async (): Promise<void> => {
   const setFaveColorBtn = document.getElementById('set-fave-color-btn');
   const faveSquishyInputEl = document.getElementById('fave-squishy-input');
   const setFaveSquishyBtn = document.getElementById('set-fave-squishy-btn');
+  const decimalSliderEl = document.getElementById('decimal-slider');
+  const decimalValueEl = document.getElementById('decimal-value');
   
   if (!counterDisplay || !messageDisplay || 
     !incrementBtn || !messageInputEl || !setMessageBtn ||
     !faveColorDisplay || !faveColorInputEl || !setFaveColorBtn ||
-    !faveSquishyDisplay || !faveSquishyInputEl || !setFaveSquishyBtn
+    !faveSquishyDisplay || !faveSquishyInputEl || !setFaveSquishyBtn ||
+    !decimalDisplay || !decimalSliderEl || !decimalValueEl
   ) {
     throw new Error('Required UI elements not found');
   }
@@ -414,6 +452,13 @@ export const init = async (): Promise<void> => {
   }
   
   const faveSquishyInput = faveSquishyInputEl;
+
+  // Type narrowing for decimal slider input element
+  if (!(decimalSliderEl instanceof HTMLInputElement)) {
+    throw new Error('decimal-slider element is not an HTMLInputElement');
+  }
+  
+  const decimalSlider = decimalSliderEl;
   
   // Update display with initial values
   // **Learning Point**: We call WASM functions directly from TypeScript.
@@ -502,6 +547,105 @@ export const init = async (): Promise<void> => {
         faveSquishyInput.value = '';
       }
     }
+  });
+
+  // **Throttle utility - ensures cooperative function is called at most once every 100ms**
+  // This prevents overwhelming the WASM module with updates during rapid slider drags
+  type Throttled<T extends (...args: any[]) => void> = (
+    ...args: Parameters<T>
+  ) => void;
+
+  function throttle<T extends (...args: any[]) => void>(
+    fn: T,
+    intervalMs: number
+  ): Throttled<T> {
+    let lastCallTime = 0;
+    let timeoutId: number | null = null;
+    let lastArgs: Parameters<T> | null = null;
+
+    const invoke = () => {
+      if (!lastArgs) return;
+      lastCallTime = Date.now();
+      fn(...lastArgs);
+      lastArgs = null;
+    };
+
+    return (...args: Parameters<T>) => {
+      const now = Date.now();
+      lastArgs = args;
+
+      const remaining = intervalMs - (now - lastCallTime);
+
+      if (remaining <= 0) {
+        if (timeoutId !== null) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+        invoke();
+      } else if (timeoutId === null) {
+        timeoutId = window.setTimeout(() => {
+          timeoutId = null;
+          invoke();
+        }, remaining);
+      }
+    };
+  }
+
+  // **Cooperative update function for decimal number**
+  // This updates the WASM state with the new value
+  function cooperativeUpdateDecimalNumber(value: number): void {
+    if (WASM_HELLO.wasmModule) {
+      WASM_HELLO.wasmModule.set_decimal_number(value);
+    }
+  }
+
+  // Create throttled version of the cooperation function
+  const throttledDecimalUpdate = throttle(cooperativeUpdateDecimalNumber, 100);
+
+  // **Slider initialization logic**
+  // Initialize display with current value
+  if (WASM_HELLO.wasmModule) {
+    const currentDecimal = WASM_HELLO.wasmModule.get_decimal_number();
+    decimalSlider.value = currentDecimal.toString();
+    decimalDisplay.textContent = currentDecimal.toFixed(1);
+    decimalValueEl.textContent = currentDecimal.toFixed(1);
+
+    // Calculate and set the initial slider fill
+    const min = Number(decimalSlider.min);
+    const max = Number(decimalSlider.max);
+    const ratio = (currentDecimal - min) / (max - min || 1);
+    const percent = `${ratio * 100}%`;
+    decimalSlider.style.setProperty('--slider-fill', percent);
+    decimalSlider.setAttribute('aria-valuenow', currentDecimal.toFixed(1));
+  }
+
+  // Handle input events (drag in progress, fires continuously during drag)
+  decimalSlider.addEventListener('input', () => {
+    const value = Number(decimalSlider.value);
+    
+    // Update UI immediately for smooth feedback
+    decimalValueEl.textContent = value.toFixed(1);
+    decimalDisplay.textContent = value.toFixed(1);
+
+    // Update slider fill position
+    const min = Number(decimalSlider.min);
+    const max = Number(decimalSlider.max);
+    const ratio = (value - min) / (max - min || 1);
+    const percent = `${ratio * 100}%`;
+    decimalSlider.style.setProperty('--slider-fill', percent);
+    decimalSlider.setAttribute('aria-valuenow', value.toFixed(1));
+
+    // Schedule cooperative update through throttle
+    throttledDecimalUpdate(value);
+  });
+
+  // Handle change events (after drag completes or keyboard use)
+  // This ensures we commit the final value even if throttled
+  decimalSlider.addEventListener('change', () => {
+    const value = Number(decimalSlider.value);
+    decimalValueEl.textContent = value.toFixed(1);
+    decimalDisplay.textContent = value.toFixed(1);
+    throttledDecimalUpdate(value);
   });
 };
 

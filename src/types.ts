@@ -199,6 +199,8 @@ export interface WasmModuleHello {
   set_fave_color(color: string): void;
   get_fave_squishy(): string;
   set_fave_squishy(squishy: string): void;
+  get_decimal_number(): number;
+  set_decimal_number(decimal_number: number): void;
 }
 
 export interface WasmHello {

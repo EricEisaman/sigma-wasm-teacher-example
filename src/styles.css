@@ -756,3 +756,109 @@ h1 {
     background: rgba(255, 0, 255, 0.4);
   }
 }
+
+/* Slider styling */
+.slider-field {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-family: system-ui, sans-serif;
+}
+
+.slider-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Base slider element */
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 200px;
+  height: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* Track styling for webkit browsers */
+.slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(to right, #0d6efd var(--slider-fill, 50%), #e0e0e0 0);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Track styling for Firefox */
+.slider::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(to right, #0d6efd var(--slider-fill, 50%), #e0e0e0 0);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+  border: none;
+}
+
+/* Thumb styling for webkit browsers */
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #0d6efd;
+  box-shadow: 0 0 0 2px #ffffff;
+  margin-top: -5px; /* center thumb on track */
+  cursor: pointer;
+  transition: box-shadow 0.2s ease;
+}
+
+/* Thumb styling for Firefox */
+.slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #0d6efd;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease;
+}
+
+/* Focus state for webkit */
+.slider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.35);
+}
+
+/* Focus state for Firefox */
+.slider:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.35);
+}
+
+/* Remove Firefox default focus outline */
+.slider:focus-visible {
+  outline: none;
+}
+
+/* Disabled state */
+.slider:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.slider:disabled::-webkit-slider-thumb {
+  cursor: not-allowed;
+}
+
+.slider:disabled::-moz-range-thumb {
+  cursor: not-allowed;
+}
+
+/* Value display styling */
+.slider-value {
+  min-width: 3ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: monospace;
+  color: #0d6efd;
+  font-weight: 500;
+}

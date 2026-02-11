@@ -111,6 +111,31 @@
                     <button id="set-fave-squishy-btn" class="button">Set Favorite Squishy</button>
                     <p style="font-size: 0.9rem; color: #888; margin-top: 0.5rem;">Press Enter in the input field to set the favorite squishy.</p>
                 </div>
+
+                <!-- Decimal number slider control -->
+                <div style="margin: 1rem 0;">
+                    <h3>Decimal Number</h3>
+                    <p>Current decimal number: <strong id="decimal-display">Loading...</strong></p>
+                    <div class="slider-field">
+                        <div class="slider-wrapper">
+                            <input
+                              id="decimal-slider"
+                              class="slider"
+                              type="range"
+                              min="-10"
+                              max="10"
+                              step="0.1"
+                              value="0"
+                              aria-valuemin="-10"
+                              aria-valuemax="10"
+                              aria-valuenow="0"
+                              aria-label="Decimal Number"
+                            />
+                            <span id="decimal-value" class="slider-value">0.0</span>
+                        </div>
+                    </div>
+                    <p style="font-size: 0.9rem; color: #888; margin-top: 0.5rem;">Drag the slider to set a decimal number between -10 and 10.</p>
+                </div>
             </div>
         </div>
     </div>

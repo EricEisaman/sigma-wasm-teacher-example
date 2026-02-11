@@ -20,6 +20,8 @@ struct HelloState {
     color: String,
     /// Squishy string that can be set and retrieved
     squishy: String,
+    /// Decimal number that can be set and retrieved
+    decimal_number: f64,
 }
 
 impl HelloState {
@@ -30,6 +32,7 @@ impl HelloState {
             message: String::from("Rust WASM is so Sigma!"),
             color: String::from("Blue"),
             squishy: String::from("Pop It"),
+            decimal_number: 0.0,
         }
     }
     
@@ -71,6 +74,16 @@ impl HelloState {
     /// Set a new squishy
     fn set_fave_squishy(&mut self, squishy: String) {
         self.squishy = squishy;
+    }
+
+    /// Get the current decimal number
+    fn get_decimal_number(&self) -> f64 {
+        self.decimal_number
+    }
+    
+    /// Set a new decimal number
+    fn set_decimal_number(&mut self, decimal_number: f64) {
+        self.decimal_number = decimal_number;
     }
 }
 
@@ -209,4 +222,30 @@ pub fn get_fave_squishy() -> String {
 pub fn set_fave_squishy(squishy: String) {
     let mut state = HELLO_STATE.lock().unwrap();
     state.set_fave_squishy(squishy);
+}
+
+/// Get the current decimal number
+/// 
+/// **Learning Point**: Floating-point numbers are directly supported by wasm-bindgen.
+/// JavaScript numbers are automatically converted to Rust `f64`.
+/// 
+/// @returns The current decimal number
+#[wasm_bindgen]
+pub fn get_decimal_number() -> f64 {
+    let state = HELLO_STATE.lock().unwrap();
+    state.get_decimal_number()
+}
+
+/// Set a new decimal number
+/// 
+/// **Learning Point**: Floating-point parameters are automatically converted from
+/// JavaScript numbers to Rust `f64` by wasm-bindgen.
+/// 
+/// **To extend**: You could add validation, clamping, or rounding here.
+/// 
+/// @param decimal_number - The new decimal number to set
+#[wasm_bindgen]
+pub fn set_decimal_number(decimal_number: f64) {
+    let mut state = HELLO_STATE.lock().unwrap();
+    state.set_decimal_number(decimal_number);
 }
