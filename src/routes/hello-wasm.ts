@@ -15,6 +15,53 @@ import { loadWasmModule, validateWasmModule } from '../wasm/loader';
 import { WasmLoadError, WasmInitError } from '../wasm/types';
 
 /**
+ * Throttle utility for slider updates
+ * 
+ * **Learning Point**: This implements a throttle that guarantees calls at most
+ * once per `limitMs` while still emitting the *latest* value.
+ * 
+ * @param fn - The function to throttle
+ * @param limitMs - Minimum milliseconds between calls
+ * @returns Throttled version of the function
+ */
+function throttle<T extends (...args: any[]) => void>(
+  fn: T,
+  limitMs: number
+): T {
+  let lastCall = 0;
+  let timeoutId: number | null = null;
+  let lastArgs: any[] | null = null;
+
+  const invoke = () => {
+    if (!lastArgs) return;
+    lastCall = performance.now();
+    fn(...lastArgs);
+    lastArgs = null;
+    timeoutId = null;
+  };
+
+  const throttled = (...args: any[]) => {
+    const now = performance.now();
+    lastArgs = args;
+
+    const remaining = limitMs - (now - lastCall);
+    if (remaining <= 0) {
+      // Enough time has passed: call immediately
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      invoke();
+    } else if (timeoutId === null) {
+      // Schedule once with latest args
+      timeoutId = window.setTimeout(invoke, remaining);
+    }
+  };
+
+  return throttled as T;
+}
+
+/**
  * Lazy WASM import - only load when init() is called
  * 
  * **Learning Point**: We use lazy imports to reduce initial bundle size.
