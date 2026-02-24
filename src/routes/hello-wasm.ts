@@ -468,6 +468,16 @@ export const init = async (): Promise<void> => {
     messageDisplay.textContent = WASM_HELLO.wasmModule.get_message();
     faveColorDisplay.textContent = WASM_HELLO.wasmModule.get_fave_color();
     faveSquishyDisplay.textContent = WASM_HELLO.wasmModule.get_fave_squishy();
+    const initialDecimal = WASM_HELLO.wasmModule.get_decimal_number();
+    decimalDisplay.textContent = initialDecimal.toFixed(1);
+    decimalValueEl.textContent = initialDecimal.toFixed(1);
+    decimalSlider.value = initialDecimal.toString();
+    // Update slider fill position for initial value
+    const minVal = Number(decimalSlider.min);
+    const maxVal = Number(decimalSlider.max);
+    const ratio = (initialDecimal - minVal) / (maxVal - minVal || 1);
+    decimalSlider.style.setProperty('--slider-fill', `${ratio * 100}%`);
+    decimalSlider.setAttribute('aria-valuenow', initialDecimal.toFixed(1));
   }
   
   // Set up event handlers
@@ -602,23 +612,7 @@ export const init = async (): Promise<void> => {
   // Create throttled version of the cooperation function
   const throttledDecimalUpdate = throttle(cooperativeUpdateDecimalNumber, 100);
 
-  // **Slider initialization logic**
-  // Initialize display with current value
-  if (WASM_HELLO.wasmModule) {
-    const currentDecimal = WASM_HELLO.wasmModule.get_decimal_number();
-    decimalSlider.value = currentDecimal.toString();
-    decimalDisplay.textContent = currentDecimal.toFixed(1);
-    decimalValueEl.textContent = currentDecimal.toFixed(1);
-
-    // Calculate and set the initial slider fill
-    const min = Number(decimalSlider.min);
-    const max = Number(decimalSlider.max);
-    const ratio = (currentDecimal - min) / (max - min || 1);
-    const percent = `${ratio * 100}%`;
-    decimalSlider.style.setProperty('--slider-fill', percent);
-    decimalSlider.setAttribute('aria-valuenow', currentDecimal.toFixed(1));
-  }
-
+  // **Decimal slider event handlers**
   // Handle input events (drag in progress, fires continuously during drag)
   decimalSlider.addEventListener('input', () => {
     const value = Number(decimalSlider.value);
