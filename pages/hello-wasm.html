@@ -90,15 +90,15 @@
                     <p style="font-size: 0.9rem; color: #888; margin-top: 0.5rem;">Press Enter in the input field to set the message</p>
                 </div>
 
-                <!-- Favorite gum display and control -->
+                <!-- Favorite color display and control -->
                 <div style="margin: 1rem 0;">
-                    <h3>Favorite Gum</h3>
-                    <p>Current favorite gum: <strong id="fave-gum-display">Loading...</strong></p>
+                    <h3>Favorite Color</h3>
+                    <p>Current favorite color: <strong id="fave-color-display">Loading...</strong></p>
                     <div style="margin: 0.5rem 0;">
-                        <input type="text" id="fave-gum-input" placeholder="Enter a new favorite gum" style="width: 100%; max-width: 400px; padding: 0.5rem; font-family: monospace;">
+                        <input type="text" id="fave-color-input" placeholder="Enter a new favorite color" style="width: 100%; max-width: 400px; padding: 0.5rem; font-family: monospace;">
                     </div>
-                    <button id="set-fave-gum-btn" class="button">Set Favorite Gum</button>
-                    <p style="font-size: 0.9rem; color: #888; margin-top: 0.5rem;">Press Enter in the input field to set the favorite gum.</p>
+                    <button id="set-fave-color-btn" class="button">Set Favorite Color</button>
+                    <p style="font-size: 0.9rem; color: #888; margin-top: 0.5rem;">Press Enter in the input field to set the favorite color.</p>
                 </div>
 
                 <!-- Favorite squishy display and control -->
@@ -112,26 +112,29 @@
                     <p style="font-size: 0.9rem; color: #888; margin-top: 0.5rem;">Press Enter in the input field to set the favorite squishy.</p>
                 </div>
 
-                <!-- Decimal Number slider -->
+                <!-- Decimal number slider control -->
                 <div style="margin: 1rem 0;">
                     <h3>Decimal Number</h3>
-                    <label class="slider" for="decimal-number-slider">
-                        <span class="slider__label">Value:</span>
-                        <input
-                            id="decimal-number-slider"
-                            class="slider__input"
-                            type="range"
-                            min="-10"
-                            max="10"
-                            value="0"
-                            step="0.1"
-                            aria-label="Decimal Number"
-                        />
-                        <span class="slider__value" id="decimal-number-display">0.0</span>
-                    </label>
-                    <p style="font-size: 0.9rem; color: #888; margin-top: 0.5rem;">
-                        Drag the slider to adjust the decimal number. Updates are throttled to at most once per 100ms for performance.
-                    </p>
+                    <p>Current decimal number: <strong id="decimal-display">Loading...</strong></p>
+                    <div class="slider-field">
+                        <div class="slider-wrapper">
+                            <input
+                              id="decimal-slider"
+                              class="slider"
+                              type="range"
+                              min="-10"
+                              max="10"
+                              step="0.1"
+                              value="0"
+                              aria-valuemin="-10"
+                              aria-valuemax="10"
+                              aria-valuenow="0"
+                              aria-label="Decimal Number"
+                            />
+                            <span id="decimal-value" class="slider-value">0.0</span>
+                        </div>
+                    </div>
+                    <p style="font-size: 0.9rem; color: #888; margin-top: 0.5rem;">Drag the slider to set a decimal number between -10 and 10.</p>
                 </div>
             </div>
         </div>

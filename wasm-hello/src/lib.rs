@@ -16,11 +16,11 @@ struct HelloState {
     counter: i32,
     /// Message string that can be set and retrieved
     message: String,
-    /// Gum string that can be set and retrieved
-    gum: String,
+    /// Color string that can be set and retrieved
+    color: String,
     /// Squishy string that can be set and retrieved
     squishy: String,
-    /// Decimal number that can be adjusted via slider (-10.0 to 10.0)
+    /// Decimal number that can be set and retrieved
     decimal_number: f64,
 }
 
@@ -30,7 +30,7 @@ impl HelloState {
         HelloState {
             counter: 0,
             message: String::from("Rust WASM is so Sigma!"),
-            gum: String::from("Hubba Bubba"),
+            color: String::from("Blue"),
             squishy: String::from("Pop It"),
             decimal_number: 0.0,
         }
@@ -56,14 +56,14 @@ impl HelloState {
         self.message = message;
     }
 
-    /// Get the current gum
-    fn get_fave_gum(&self) -> String {
-        self.gum.clone()
+    /// Get the current color
+    fn get_fave_color(&self) -> String {
+        self.color.clone()
     }
     
-    /// Set a new gum
-    fn set_fave_gum(&mut self, gum: String) {
-        self.gum = gum;
+    /// Set a new color
+    fn set_fave_color(&mut self, color: String) {
+        self.color = color;
     }
 
     /// Get the current squishy
@@ -82,8 +82,8 @@ impl HelloState {
     }
     
     /// Set a new decimal number
-    fn set_decimal_number(&mut self, value: f64) {
-        self.decimal_number = value;
+    fn set_decimal_number(&mut self, decimal_number: f64) {
+        self.decimal_number = decimal_number;
     }
 }
 
@@ -170,31 +170,31 @@ pub fn set_message(message: String) {
     state.set_message(message);
 }
 
-/// Get the current gum
+/// Get the current color
 /// 
 /// **Learning Point**: Strings in Rust need to be converted to JavaScript strings.
 /// `wasm-bindgen` handles this automatically when you return a `String` from a
 /// `#[wasm_bindgen]` function.
 /// 
-/// @returns The current gum as a JavaScript string
+/// @returns The current color as a JavaScript string
 #[wasm_bindgen]
-pub fn get_fave_gum() -> String {
+pub fn get_fave_color() -> String {
     let state = HELLO_STATE.lock().unwrap();
-    state.get_fave_gum()
+    state.get_fave_color()
 }
 
-/// Set a new gum
+/// Set a new color
 /// 
 /// **Learning Point**: JavaScript strings are automatically converted to Rust `String`
 /// when passed as parameters to `#[wasm_bindgen]` functions.
 /// 
 /// **To extend**: You could add validation, length limits, or formatting here.
 /// 
-/// @param gum - The new gum to set
+/// @param color - The new color to set
 #[wasm_bindgen]
-pub fn set_fave_gum(gum: String) {
+pub fn set_fave_color(color: String) {
     let mut state = HELLO_STATE.lock().unwrap();
-    state.set_fave_gum(gum);
+    state.set_fave_color(color);
 }
 
 /// Get the current squishy
@@ -226,10 +226,10 @@ pub fn set_fave_squishy(squishy: String) {
 
 /// Get the current decimal number
 /// 
-/// **Learning Point**: This demonstrates working with floating-point numbers.
-/// JavaScript numbers are automatically converted to/from Rust f64.
+/// **Learning Point**: Floating-point numbers are directly supported by wasm-bindgen.
+/// JavaScript numbers are automatically converted to Rust `f64`.
 /// 
-/// @returns The current decimal number value
+/// @returns The current decimal number
 #[wasm_bindgen]
 pub fn get_decimal_number() -> f64 {
     let state = HELLO_STATE.lock().unwrap();
@@ -238,12 +238,14 @@ pub fn get_decimal_number() -> f64 {
 
 /// Set a new decimal number
 /// 
-/// **Learning Point**: Slider values from JavaScript are passed as f64.
-/// You could add range validation here, though the slider already constrains input.
+/// **Learning Point**: Floating-point parameters are automatically converted from
+/// JavaScript numbers to Rust `f64` by wasm-bindgen.
 /// 
-/// @param value - The new decimal number (-10.0 to 10.0)
+/// **To extend**: You could add validation, clamping, or rounding here.
+/// 
+/// @param decimal_number - The new decimal number to set
 #[wasm_bindgen]
-pub fn set_decimal_number(value: f64) {
+pub fn set_decimal_number(decimal_number: f64) {
     let mut state = HELLO_STATE.lock().unwrap();
-    state.set_decimal_number(value);
+    state.set_decimal_number(decimal_number);
 }
