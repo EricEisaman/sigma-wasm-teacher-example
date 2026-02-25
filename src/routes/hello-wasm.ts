@@ -78,8 +78,8 @@ let wasmModuleExports: {
   set_message: (message: string) => void;
   get_fave_gum: () => string;
   set_fave_gum: (gum: string) => void;
-  get_fave_squishy: () => string;
-  set_fave_squishy: (squishy: string) => void;
+  get_fave_food: () => string;
+  set_fave_food: (food: string) => void;
   get_decimal_number: () => number;
   set_decimal_number: (value: number) => void;
 } | null = null;
@@ -130,11 +130,11 @@ const getInitWasm = async (): Promise<unknown> => {
     if ('set_fave_gum' in moduleUnknown) {
       moduleKeys.push('set_fave_gum');
     }
-    if ('get_fave_squishy' in moduleUnknown) {
-      moduleKeys.push('get_fave_squishy');
+    if ('get_fave_food' in moduleUnknown) {
+      moduleKeys.push('get_fave_food');
     }
-    if ('set_fave_squishy' in moduleUnknown) {
-      moduleKeys.push('set_fave_squishy');
+    if ('set_fave_food' in moduleUnknown) {
+      moduleKeys.push('set_fave_food');
     }
     if ('get_decimal_number' in moduleUnknown) {
       moduleKeys.push('get_decimal_number');
@@ -172,11 +172,11 @@ const getInitWasm = async (): Promise<unknown> => {
     if (!('set_fave_gum' in moduleUnknown) || typeof moduleUnknown.set_fave_gum !== 'function') {
       throw new Error(`Module missing 'set_fave_gum' export. Available: ${allKeys.join(', ')}`);
     }
-    if (!('get_fave_squishy' in moduleUnknown) || typeof moduleUnknown.get_fave_squishy !== 'function') {
-      throw new Error(`Module missing 'get_fave_squishy' export. Available: ${allKeys.join(', ')}`);
+    if (!('get_fave_food' in moduleUnknown) || typeof moduleUnknown.get_fave_food !== 'function') {
+      throw new Error(`Module missing 'get_fave_food' export. Available: ${allKeys.join(', ')}`);
     }
-    if (!('set_fave_squishy' in moduleUnknown) || typeof moduleUnknown.set_fave_squishy !== 'function') {
-      throw new Error(`Module missing 'set_fave_squishy' export. Available: ${allKeys.join(', ')}`);
+    if (!('set_fave_food' in moduleUnknown) || typeof moduleUnknown.set_fave_food !== 'function') {
+      throw new Error(`Module missing 'set_fave_food' export. Available: ${allKeys.join(', ')}`);
     }
     if (!('get_decimal_number' in moduleUnknown) || typeof moduleUnknown.get_decimal_number !== 'function') {
       throw new Error(`Module missing 'get_decimal_number' export. Available: ${allKeys.join(', ')}`);
@@ -195,8 +195,8 @@ const getInitWasm = async (): Promise<unknown> => {
     const setMessageFunc = moduleUnknown.set_message;
     const getFaveGumFunc = moduleUnknown.get_fave_gum;
     const setFaveGumFunc = moduleUnknown.set_fave_gum;
-    const getFaveSquishyFunc = moduleUnknown.get_fave_squishy;
-    const setFaveSquishyFunc = moduleUnknown.set_fave_squishy;
+    const getFavefoodFunc = moduleUnknown.get_fave_food;
+    const setFavefoodFunc = moduleUnknown.set_fave_food;
     const getDecimalNumberFunc = moduleUnknown.get_decimal_number;
     const setDecimalNumberFunc = moduleUnknown.set_decimal_number;
     
@@ -224,11 +224,11 @@ const getInitWasm = async (): Promise<unknown> => {
     if (typeof setFaveGumFunc !== 'function') {
       throw new Error('set_fave_gum export is not a function');
     }
-    if (typeof getFaveSquishyFunc !== 'function') {
-      throw new Error('get_fave_squishy export is not a function');
+    if (typeof getFavefoodFunc !== 'function') {
+      throw new Error('get_fave_food export is not a function');
     }
-    if (typeof setFaveSquishyFunc !== 'function') {
-      throw new Error('set_fave_squishy export is not a function');
+    if (typeof setFavefoodFunc !== 'function') {
+      throw new Error('set_fave_food export is not a function');
     }
     if (typeof getDecimalNumberFunc !== 'function') {
       throw new Error('get_decimal_number export is not a function');
@@ -257,9 +257,9 @@ const getInitWasm = async (): Promise<unknown> => {
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       set_fave_gum: setFaveGumFunc as (gum: string) => void,
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      get_fave_squishy: getFaveSquishyFunc as () => string,
+      get_fave_food: getFavefoodFunc as () => string,
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      set_fave_squishy: setFaveSquishyFunc as (squishy: string) => void,
+      set_fave_food: setFavefoodFunc as (food: string) => void,
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       get_decimal_number: getDecimalNumberFunc as () => number,
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
@@ -348,11 +348,11 @@ function validateHelloModule(exports: unknown): WasmModuleHello | null {
     if (typeof wasmModuleExports.set_fave_gum !== 'function') {
       missingExports.push('set_fave_gum (function)');
     }
-    if (typeof wasmModuleExports.get_fave_squishy !== 'function') {
-      missingExports.push('get_fave_squishy (function)');
+    if (typeof wasmModuleExports.get_fave_food !== 'function') {
+      missingExports.push('get_fave_food (function)');
     }
-    if (typeof wasmModuleExports.set_fave_squishy !== 'function') {
-      missingExports.push('set_fave_squishy (function)');
+    if (typeof wasmModuleExports.set_fave_food !== 'function') {
+      missingExports.push('set_fave_food (function)');
     }
     if (typeof wasmModuleExports.get_decimal_number !== 'function') {
       missingExports.push('get_decimal_number (function)');
@@ -386,8 +386,8 @@ function validateHelloModule(exports: unknown): WasmModuleHello | null {
     set_message: wasmModuleExports.set_message,
     get_fave_gum: wasmModuleExports.get_fave_gum,
     set_fave_gum: wasmModuleExports.set_fave_gum,
-    get_fave_squishy: wasmModuleExports.get_fave_squishy,
-    set_fave_squishy: wasmModuleExports.set_fave_squishy,
+    get_fave_food: wasmModuleExports.get_fave_food,
+    set_fave_food: wasmModuleExports.set_fave_food,
     get_decimal_number: wasmModuleExports.get_decimal_number,
     set_decimal_number: wasmModuleExports.set_decimal_number,
   };
@@ -458,21 +458,21 @@ export const init = async (): Promise<void> => {
   const counterDisplay = document.getElementById('counter-display');
   const messageDisplay = document.getElementById('message-display');
   const faveGumDisplay = document.getElementById('fave-gum-display');
-  const faveSquishyDisplay = document.getElementById('fave-squishy-display');
+  const favefoodDisplay = document.getElementById('fave-food-display');
   const decimalNumberDisplay = document.getElementById('decimal-number-display');
   const incrementBtn = document.getElementById('increment-btn');
   const messageInputEl = document.getElementById('message-input');
   const setMessageBtn = document.getElementById('set-message-btn');
   const faveGumInputEl = document.getElementById('fave-gum-input');
   const setFaveGumBtn = document.getElementById('set-fave-gum-btn');
-  const faveSquishyInputEl = document.getElementById('fave-squishy-input');
-  const setFaveSquishyBtn = document.getElementById('set-fave-squishy-btn');
+  const favefoodInputEl = document.getElementById('fave-food-input');
+  const setFavefoodBtn = document.getElementById('set-fave-food-btn');
   const decimalNumberSlider = document.getElementById('decimal-number-slider');
   
   if (!counterDisplay || !messageDisplay || 
     !incrementBtn || !messageInputEl || !setMessageBtn ||
     !faveGumDisplay || !faveGumInputEl || !setFaveGumBtn ||
-    !faveSquishyDisplay || !faveSquishyInputEl || !setFaveSquishyBtn ||
+    !favefoodDisplay || !favefoodInputEl || !setFavefoodBtn ||
     !decimalNumberDisplay || !decimalNumberSlider
   ) {
     throw new Error('Required UI elements not found');
@@ -493,11 +493,11 @@ export const init = async (): Promise<void> => {
   const faveGumInput = faveGumInputEl;
 
   // Type narrowing for input element
-  if (!(faveSquishyInputEl instanceof HTMLInputElement)) {
-    throw new Error('fave-squishy-input element is not an HTMLInputElement');
+  if (!(favefoodInputEl instanceof HTMLInputElement)) {
+    throw new Error('fave-food-input element is not an HTMLInputElement');
   }
   
-  const faveSquishyInput = faveSquishyInputEl;
+  const favefoodInput = favefoodInputEl;
 
   // Type narrowing for slider element
   if (!(decimalNumberSlider instanceof HTMLInputElement)) {
@@ -513,7 +513,7 @@ export const init = async (): Promise<void> => {
     counterDisplay.textContent = WASM_HELLO.wasmModule.get_counter().toString();
     messageDisplay.textContent = WASM_HELLO.wasmModule.get_message();
     faveGumDisplay.textContent = WASM_HELLO.wasmModule.get_fave_gum();
-    faveSquishyDisplay.textContent = WASM_HELLO.wasmModule.get_fave_squishy();
+    favefoodDisplay.textContent = WASM_HELLO.wasmModule.get_fave_food();
     const initialDecimal = WASM_HELLO.wasmModule.get_decimal_number();
     slider.value = initialDecimal.toString();
     decimalNumberDisplay.textContent = initialDecimal.toFixed(1);
@@ -575,25 +575,25 @@ export const init = async (): Promise<void> => {
     }
   });
 
-  setFaveSquishyBtn.addEventListener('click', () => {
-    if (WASM_HELLO.wasmModule && faveSquishyInput) {
-      const newSquishy = faveSquishyInput.value.trim();
-      if (newSquishy) {
-        WASM_HELLO.wasmModule.set_fave_squishy(newSquishy);
-        faveSquishyDisplay.textContent = WASM_HELLO.wasmModule.get_fave_squishy();
-        faveSquishyInput.value = '';
+  setFavefoodBtn.addEventListener('click', () => {
+    if (WASM_HELLO.wasmModule && favefoodInput) {
+      const newfood = favefoodInput.value.trim();
+      if (newfood) {
+        WASM_HELLO.wasmModule.set_fave_food(newfood);
+        favefoodDisplay.textContent = WASM_HELLO.wasmModule.get_fave_food();
+        favefoodInput.value = '';
       }
     }
   });
 
-  // Allow Enter key to set squishy
-  faveSquishyInput.addEventListener('keydown', (e: KeyboardEvent) => {
+  // Allow Enter key to set food
+  favefoodInput.addEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'Enter' && WASM_HELLO.wasmModule) {
-      const newSquishy = faveSquishyInput.value.trim();
-      if (newSquishy) {
-        WASM_HELLO.wasmModule.set_fave_squishy(newSquishy);
-        faveSquishyDisplay.textContent = WASM_HELLO.wasmModule.get_fave_squishy();
-        faveSquishyInput.value = '';
+      const newfood = favefoodInput.value.trim();
+      if (newfood) {
+        WASM_HELLO.wasmModule.set_fave_food(newfood);
+        favefoodDisplay.textContent = WASM_HELLO.wasmModule.get_fave_food();
+        favefoodInput.value = '';
       }
     }
   });
