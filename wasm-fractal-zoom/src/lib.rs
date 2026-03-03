@@ -32,7 +32,7 @@ const PALETTE2: [Color; 7] = [
     Color { r: 128, g: 0, b: 255 },  // Deep purple
     Color { r: 147, g:133, b: 227 },  // Violet
     Color { r: 226, g: 104, b: 105 },  // Coral 
-    Color { r: 214 g: 138, b: 88 },  // Orange
+    Color { r: 214, g: 138, b: 88 },  // Orange
     Color { r: 251, g: 242, b: 196 },  // Cream
     Color { r: 112, g: 132, b: 231 },  // Sky Blue 
     Color { r: 229, g: 193, b: 133 },  // Dusty Rose
