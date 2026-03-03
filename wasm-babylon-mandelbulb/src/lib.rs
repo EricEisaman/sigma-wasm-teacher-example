@@ -46,15 +46,17 @@ const PALETTE1: [Color; 5] = [
 
 #[wasm_bindgen]
 pub fn get_palette(id: u32) -> JsValue {
-    let colors = if id == 0 {
-        PALETTE0.to_vec()
-    } else {
-        PALETTE1.to_vec()
+    let colors = match id {
+        0 => PALETTE0.to_vec(),
+        1 => PALETTE1.to_vec(), // your new PALETTE2 path
+        2 => PALETTE2.to_vec(),
+        _ => food.to_vec(),
     };
-    
+
     let palette = Palette { colors };
     serde_wasm_bindgen::to_value(&palette).unwrap()
 }
+
 
 #[wasm_bindgen]
 pub fn get_default_config() -> JsValue {
@@ -72,7 +74,11 @@ pub fn get_default_config() -> JsValue {
 /// Helper to get a flat f32 array of the palette for uniform buffers
 #[wasm_bindgen]
 pub fn get_flat_palette(id: u32) -> Vec<f32> {
-    let palette = if id == 0 { PALETTE0 } else { PALETTE1 };
+    let palette = match id {
+        0 => PALETTE0,
+        1 => PALETTE1,
+        2 => PALETTE2,
+    };
     let mut flat = Vec::with_capacity(palette.len() * 4); // Use float4 alignment for WGSL
     for color in palette.iter() {
         flat.push(color.r);
