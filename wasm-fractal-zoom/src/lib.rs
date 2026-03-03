@@ -12,7 +12,7 @@ struct Color {
     b: u8,
 }
 
-const PALETTE0: [Color; 5] = [
+const PALETTE0: &[Color; 5] = &[
     Color { r: 0, g: 255, b: 255 },   // Cyan
     Color { r: 255, g: 0, b: 255 },   // Magenta
     Color { r: 128, g: 0, b: 255 },  // Purple
@@ -20,7 +20,7 @@ const PALETTE0: [Color; 5] = [
     Color { r: 255, g: 255, b: 0 },   // Yellow
 ];
 
-const PALETTE1: [Color; 5] = [
+const PALETTE1: &[Color; 5] = &[
     Color { r: 255, g: 0, b: 128 },  // Hot Pink
     Color { r: 0, g: 255, b: 128 },  // Electric Green
     Color { r: 128, g: 0, b: 255 },  // Deep Purple
@@ -28,7 +28,7 @@ const PALETTE1: [Color; 5] = [
     Color { r: 255, g: 128, b: 0 },  // Neon Orange
 ];
 
-const PALETTE2: [Color; 7] = [
+const PALETTE2: &[Color; 7] = &[
     Color { r: 128, g: 0, b: 255 },  // Deep purple
     Color { r: 147, g:133, b: 227 },  // Violet
     Color { r: 226, g: 104, b: 105 },  // Coral 
