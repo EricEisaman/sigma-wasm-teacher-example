@@ -48,9 +48,10 @@ pub fn get_color(iterations: f64, max_iterations: f64, palette_id: u32) -> (u8, 
         0 => &PALETTE0,
         1 => &PALETTE1,
         2 => &PALETTE2,
+        _ => &PALETTE0
     };
 
-    let palette = if palette_id == 0 { &PALETTE0 } else { &PALETTE1 };
+
     let n = palette.len() as f64;
     let normalized = iterations / max_iterations;
     let scaled = normalized * (n - 1.0);
