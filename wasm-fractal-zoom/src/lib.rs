@@ -29,9 +29,9 @@ const PALETTE1: [Color; 5] = [
 ];
 
 const PALETTE2: [Color; 3] = [
-    Color { r: 211, g: 105, b: 108 },  
-    Color { r: 65, g: 129, b: 127 }, 
-    Color { r: 167, g: 199, b: 99 }, 
+    Color { r: 255, g: 255, b: 255 },  
+    Color { r: 158, g: 228, b: 255 }, 
+    Color { r: 84, g: 207, b: 255 }, 
 ];
 
 pub fn get_color(iterations: f64, max_iterations: f64, palette_id: u32) -> (u8, u8, u8) {
